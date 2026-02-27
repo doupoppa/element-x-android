@@ -1,0 +1,87 @@
+# Gradle 优化配置 - 快速编译专用
+# 将此文件内容添加到 gradle.properties
+
+# ===== Gradle 性能优化 =====
+
+# 1. 构建缓存 (必须启用)
+org.gradle.caching=true
+
+# 2. 配置缓存 (加速后续构建)
+org.gradle.configuration-cache=true
+org.gradle.configuration-cache.problems=fail
+
+# 3. 并行构建 (最大化 CPU 利用率)
+org.gradle.parallel=true
+org.gradle.workers.max=8
+
+# 4. JVM 内存配置
+org.gradle.jvmargs=-Xmx4g -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled
+
+# 5. 守护进程 (保持 JVM 启动)
+org.gradle.daemon=true
+org.gradle.daemon.idletimeout=3600000
+
+# ===== Kotlin 编译优化 =====
+
+# 6. Kotlin 增量编译
+kotlin.incremental=true
+kotlin.incremental.useClasspathSnapshot=true
+
+# 7. Kotlin 编译器策略
+kotlin.compiler.execution.strategy=daemon
+
+# ===== Android 编译优化 =====
+
+# 8. 启用 AAB 构建缓存
+android.enableBuildCacheUseCase=true
+
+# 9. 启用 Lint 增量
+android.enableIncrementalLinting=true
+
+# 10. 禁用不必要的构建
+android.enableDependencyAnalysis=false
+
+# ===== 其他优化 =====
+
+# 11. 跳过生成 BuildConfig 的字节码
+android.enableBuildConfigAsBytecode=false
+
+# 12. 启用预编译脚本缓存
+org.gradle.kotlin.dsl.precompiled.script.plugins.accessors.enabled=true
+
+# ===== 仓库镜像优化 =====
+
+# 如需使用国内镜像，取消注释以下行
+# maven { url "https://mirrors.aliyun.com/maven/repository/public" }
+# maven { url "https://maven.aliyun.com/repository/google" }
+# maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
+
+# ===== 推荐的 Gradle 包装器设置 =====
+
+# gradle/wrapper/gradle-wrapper.properties 应包含:
+# distributionUrl=https\://services.gradle.org/distributions/gradle-9.2.1-bin.zip
+# distributionBase=GRADLE_USER_HOME
+# distributionPath=wrapper/dists
+# zipStorePath=wrapper/dists
+# zipStoreBase=GRADLE_USER_HOME
+
+# ===== 使用说明 =====
+
+# 1. 将以上设置复制到 gradle.properties (在项目根目录)
+# 2. 重新运行编译: ./super_fast_build.sh
+# 3. 首次编译会缓存所有依赖，后续编译会非常快
+
+# ===== 预期性能提升 =====
+
+# 首次编译: 15-20 分钟 (取决于网络)
+# 后续小改动: 2-5 分钟
+# 无改动的重新构建: < 1 分钟
+
+# ===== 清除缓存 (如需要) =====
+
+# 仅清除 Gradle 缓存:
+#   rm -rf ~/.gradle/caches/build-cache-*
+
+# 完整清除 (强制重新构建):
+#   ./gradlew clean assembleF droidRelease
+

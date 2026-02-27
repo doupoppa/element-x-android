@@ -38,15 +38,15 @@ val SemanticColors.unreadIndicator
 val SemanticColors.placeholderBackground
     get() = bgSubtleSecondary
 
-// This color is not present in Semantic color, so put hard-coded value for now
+// WeChat style bubble colors
 @OptIn(CoreColorToken::class)
 val SemanticColors.messageFromMeBackground
-    get() = if (isLight) LightColorTokens.colorGray400 else DarkColorTokens.colorGray500
+    get() = if (isLight) Color(0xFF95EC69) else Color(0xFF2B5A1E)
 
-// This color is not present in Semantic color, so put hard-coded value for now
+// WeChat style bubble colors
 @OptIn(CoreColorToken::class)
 val SemanticColors.messageFromOtherBackground
-    get() = if (isLight) LightColorTokens.colorGray300 else DarkColorTokens.colorGray400
+    get() = if (isLight) Color(0xFFFFFFFF) else Color(0xFF2C2C2C)
 
 // This color is not present in Semantic color, so put hard-coded value for now
 @OptIn(CoreColorToken::class)

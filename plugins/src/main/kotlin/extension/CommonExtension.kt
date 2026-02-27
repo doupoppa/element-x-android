@@ -15,6 +15,8 @@ import org.gradle.api.Project
 import java.io.File
 
 fun CommonExtension<*, *, *, *, *, *>.androidConfig(project: Project) {
+    val isFastBuild = project.findProperty("dev.fast.build")?.toString()?.toBoolean() ?: false
+
     defaultConfig {
         compileSdk = Versions.COMPILE_SDK
         minSdk = Versions.minSdk
@@ -36,17 +38,24 @@ fun CommonExtension<*, *, *, *, *, *>.androidConfig(project: Project) {
     }
 
     lint {
-        lintConfig = File("${project.rootDir}/tools/lint/lint.xml")
-        if (isEnterpriseBuild) {
-            // Disable check on ObsoleteSdkInt for Enterprise builds
-            // since the min sdk is higher for Enterprise builds
-            disable.add("ObsoleteSdkInt")
+        if (isFastBuild) {
+            // 开发阶段：完全禁用 lint 检查
+            checkReleaseBuilds = false
+            abortOnError = false
+            disable.addAll(setOf("All"))
+        } else {
+            lintConfig = File("${project.rootDir}/tools/lint/lint.xml")
+            if (isEnterpriseBuild) {
+                // Disable check on ObsoleteSdkInt for Enterprise builds
+                // since the min sdk is higher for Enterprise builds
+                disable.add("ObsoleteSdkInt")
+            }
+            checkDependencies = false
+            abortOnError = true
+            ignoreTestSources = true
+            ignoreTestFixturesSources = true
+            checkGeneratedSources = false
         }
-        checkDependencies = false
-        abortOnError = true
-        ignoreTestSources = true
-        ignoreTestFixturesSources = true
-        checkGeneratedSources = false
     }
 }
 

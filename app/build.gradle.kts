@@ -101,6 +101,19 @@ android {
             storePassword = System.getenv("ELEMENT_ANDROID_NIGHTLY_STOREPASSWORD")
                 ?: project.property("signing.element.nightly.storePassword") as? String?
         }
+        register("fdroid") {
+            val storeFilePath = System.getenv("FDROID_KEYSTORE_PATH")
+                ?: project.findProperty("signing.fdroid.storeFile") as? String?
+            if (!storeFilePath.isNullOrEmpty()) {
+                storeFile = file(storeFilePath)
+                storePassword = System.getenv("FDROID_STORE_PASSWORD")
+                    ?: project.findProperty("signing.fdroid.storePassword") as? String?
+                keyAlias = System.getenv("FDROID_KEY_ALIAS")
+                    ?: project.findProperty("signing.fdroid.keyAlias") as? String?
+                keyPassword = System.getenv("FDROID_KEY_PASSWORD")
+                    ?: project.findProperty("signing.fdroid.keyPassword") as? String?
+            }
+        }
     }
 
     val baseAppName = BuildTimeConfig.APPLICATION_NAME
@@ -127,27 +140,36 @@ android {
                 "login_redirect_scheme",
                 oidcRedirectSchemeBase,
             )
-            signingConfig = signingConfigs.getByName("debug")
 
-            optimization {
-                enable = true
-                keepRules {
-                    files.add(File(projectDir, "common-proguard-rules.pro"))
-                    files.add(getDefaultProguardFile("proguard-android-optimize.txt"))
+            val isFastBuild = project.findProperty("dev.fast.build")?.toString()?.toBoolean() ?: false
 
-                    // Depending on whether the app flavor is enterprise or not we want to use different proguard rules.
-                    val flavorProguardFile = if (isEnterpriseBuild) {
-                        // Custom rules for enterprise builds
-                        File(projectDir, "enterprise-proguard-rules.pro")
-                    } else {
-                        // These default rules prevent the OSS app from being obfuscated
-                        File(projectDir, "default-proguard-rules.pro")
-                    }
+            if (isFastBuild) {
+                // 开发阶段：关闭 R8 混淆，极大加速编译
+                optimization {
+                    enable = false
+                }
+                isDebuggable = false
+            } else {
+                optimization {
+                    enable = true
+                    keepRules {
+                        files.add(File(projectDir, "common-proguard-rules.pro"))
+                        files.add(getDefaultProguardFile("proguard-android-optimize.txt"))
 
-                    if (flavorProguardFile.exists()) {
-                        files.add(flavorProguardFile)
-                    } else {
-                        logger.warn("Proguard file ${flavorProguardFile.absolutePath} does not exist")
+                        // Depending on whether the app flavor is enterprise or not we want to use different proguard rules.
+                        val flavorProguardFile = if (isEnterpriseBuild) {
+                            // Custom rules for enterprise builds
+                            File(projectDir, "enterprise-proguard-rules.pro")
+                        } else {
+                            // These default rules prevent the OSS app from being obfuscated
+                            File(projectDir, "default-proguard-rules.pro")
+                        }
+
+                        if (flavorProguardFile.exists()) {
+                            files.add(flavorProguardFile)
+                        } else {
+                            logger.warn("Proguard file ${flavorProguardFile.absolutePath} does not exist")
+                        }
                     }
                 }
             }
@@ -207,6 +229,8 @@ android {
             dimension = "store"
             buildConfigFieldStr("SHORT_FLAVOR_DESCRIPTION", "F")
             buildConfigFieldStr("FLAVOR_DESCRIPTION", "FDroid")
+            // Use fdroid signing config for release builds of this flavor
+            signingConfig = signingConfigs.getByName("fdroid")
         }
     }
 
@@ -248,6 +272,16 @@ androidComponents {
 
     val reportingExtension: ReportingExtension = project.extensions.getByType(ReportingExtension::class.java)
     configureLicensesTasks(reportingExtension)
+}
+
+// 开发阶段：禁用所有 lintVital 任务以加速编译
+val isFastBuild = project.findProperty("dev.fast.build")?.toString()?.toBoolean() ?: false
+if (isFastBuild) {
+    project.afterEvaluate {
+        tasks.matching { it.name.contains("lintVital") || it.name.contains("lintAnalyze") }.configureEach {
+            enabled = false
+        }
+    }
 }
 
 // Knit

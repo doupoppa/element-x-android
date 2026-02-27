@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalView
@@ -208,6 +209,7 @@ fun MessagesView(
         content = {
             Scaffold(
                 contentWindowInsets = WindowInsets.statusBars,
+                containerColor = if (ElementTheme.isLightTheme) Color(0xFFEDEDED) else Color(0xFF1A1A1A),
                 topBar = {
                     if (state.timelineState.timelineMode is Timeline.Mode.Thread) {
                         ThreadTopBar(

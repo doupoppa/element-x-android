@@ -9,6 +9,7 @@
 package io.element.android.features.login.impl.screens.onboarding
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,27 @@ class OnBoardingPresenter(
     @Composable
     override fun present(): OnBoardingState {
         val localCoroutineScope = rememberCoroutineScope()
+
+        // Custom homeserver URL - hardcoded for this build
+        val customHomeserverUrl = "https://matrix.cacheskysx.com"
+
+        // Auto-submit login on composition to skip onboard interface
+        val isAutoLoginInitiated = rememberSaveable { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            if (!isAutoLoginInitiated.value) {
+                isAutoLoginInitiated.value = true
+                localCoroutineScope.launch {
+                    accountProviderDataSource.setUrl(customHomeserverUrl)
+                    loginHelper.submit(
+                        isAccountCreation = false,
+                        homeserverUrl = customHomeserverUrl,
+                        loginHint = null,
+                    )
+                }
+            }
+        }
+
         val forcedAccountProvider = remember {
             // If defaultHomeserverList() returns a singleton list, this is the default account provider.
             // In this case, the user can sign in using this homeserver, or use QrCode login
@@ -84,7 +106,7 @@ class OnBoardingPresenter(
         val defaultAccountProvider = remember(linkAccountProvider) {
             // If there is a forced account provider, this is the default account provider
             // Else use the account provider passed in the params if any and if allowed
-            forcedAccountProvider ?: linkAccountProvider
+            forcedAccountProvider ?: linkAccountProvider ?: customHomeserverUrl
         }
         val canLoginWithQrCode by produceState(initialValue = false, linkAccountProvider) {
             value = linkAccountProvider == null
@@ -106,11 +128,11 @@ class OnBoardingPresenter(
         fun handleEvent(event: OnBoardingEvents) {
             when (event) {
                 is OnBoardingEvents.OnSignIn -> localCoroutineScope.launch {
-                    // Ensure that the current account provider is set
-                    accountProviderDataSource.setUrl(event.defaultAccountProvider)
+                    // Ensure that the current account provider is set to custom homeserver
+                    accountProviderDataSource.setUrl(customHomeserverUrl)
                     loginHelper.submit(
                         isAccountCreation = false,
-                        homeserverUrl = event.defaultAccountProvider,
+                        homeserverUrl = customHomeserverUrl,
                         loginHint = params.loginHint?.takeIf { forcedAccountProvider == null },
                     )
                 }

@@ -165,6 +165,21 @@ allprojects {
     }
 }
 
+// 开发阶段：全局禁用所有子项目的 lintVital 任务以加速编译
+if (project.findProperty("dev.fast.build")?.toString()?.toBoolean() == true) {
+    subprojects {
+        afterEvaluate {
+            tasks.matching {
+                it.name.contains("lintVital") ||
+                    it.name.contains("lintAnalyze") ||
+                    it.name.contains("lintReport")
+            }.configureEach {
+                enabled = false
+            }
+        }
+    }
+}
+
 // Register quality check tasks.
 tasks.register("runQualityChecks") {
     dependsOn(":tests:konsist:testDebugUnitTest")
