@@ -325,7 +325,8 @@ class MessagesViewTest {
         )
         val timelineEvent = state.timelineState.timelineItems.filterIsInstance<TimelineItem.Event>().first()
         rule.setMessagesView(state = state)
-        rule.onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
+        // WeChat style: every message has an avatar, so use onAllNodes and pick the first one
+        rule.onAllNodesWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).onFirst().performClick()
         eventsRecorder.assertSingle(
             MessagesEvent.OnUserClicked(
                 MatrixUser(
@@ -344,7 +345,8 @@ class MessagesViewTest {
         val state = aMessagesState(eventSink = eventsRecorder)
         val timelineEvent = state.timelineState.timelineItems.filterIsInstance<TimelineItem.Event>().first()
         rule.setMessagesView(state = state)
-        rule.onNodeWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).performClick()
+        // WeChat style: every message has an avatar, so use onAllNodes and pick the first one
+        rule.onAllNodesWithTag(TestTags.timelineItemSenderAvatar.value, useUnmergedTree = true).onFirst().performClick()
         eventsRecorder.assertSingle(
             MessagesEvent.OnUserClicked(
                 MatrixUser(
