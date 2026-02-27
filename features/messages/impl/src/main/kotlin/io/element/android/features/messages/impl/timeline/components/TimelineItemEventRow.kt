@@ -51,7 +51,9 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstrainScope
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -124,14 +126,18 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-// The bubble has a negative margin to be placed a bit upper regarding the sender
-// information and overlap the avatar.
-val NEGATIVE_MARGIN_FOR_BUBBLE = (-8).dp
+// WeChat style: no negative margin needed, avatar sits beside bubble (not overlapping)
+val NEGATIVE_MARGIN_FOR_BUBBLE = 0.dp
 
 // Width of the transparent border around the sender avatar
 val SENDER_AVATAR_BORDER_WIDTH = 3.dp
 
-private val BUBBLE_INCOMING_OFFSET = 16.dp
+// WeChat style constants
+private val WECHAT_AVATAR_SIZE = AvatarSize.TimelineSender
+private val WECHAT_AVATAR_OUTER_MARGIN = 10.dp   // margin from screen edge to avatar
+private val WECHAT_AVATAR_BUBBLE_GAP = 8.dp       // gap between avatar and bubble
+private val WECHAT_GROUP_MSG_SPACING = 2.dp        // spacing between grouped messages
+private val WECHAT_NEW_GROUP_SPACING = 16.dp       // spacing before a new group
 
 @Composable
 fun TimelineItemEventRow(
@@ -199,9 +205,9 @@ fun TimelineItemEventRow(
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (event.groupPosition.isNew()) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(WECHAT_NEW_GROUP_SPACING))
         } else {
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(WECHAT_GROUP_MSG_SPACING))
         }
         val canReply = timelineRoomInfo.userHasPermissionToSendMessage && event.canBeRepliedTo
         if (canReply) {
@@ -267,11 +273,13 @@ fun TimelineItemEventRow(
         }
 
         if (displayThreadSummaries && timelineMode !is Timeline.Mode.Thread && event.threadInfo is TimelineItemThreadInfo.ThreadRoot) {
+            val avatarSlotWidth = WECHAT_AVATAR_OUTER_MARGIN + WECHAT_AVATAR_SIZE.dp + WECHAT_AVATAR_BUBBLE_GAP
             ThreadSummaryView(
+                // WeChat style: account for avatars on both sides
                 modifier = if (event.isMine) {
-                    Modifier.align(Alignment.End).padding(end = 16.dp)
+                    Modifier.align(Alignment.End).padding(end = avatarSlotWidth)
                 } else {
-                    if (timelineRoomInfo.isDm) Modifier else Modifier.padding(start = 16.dp)
+                    Modifier.padding(start = avatarSlotWidth)
                 }.padding(top = 2.dp),
                 threadSummary = event.threadInfo.summary,
                 latestEventText = event.threadInfo.latestEventText,
@@ -414,6 +422,18 @@ private fun TimelineItemEventRowContent(
     modifier: Modifier = Modifier,
     eventContentView: @Composable (Modifier, (ContentAvoidingLayoutData) -> Unit) -> Unit,
 ) {
+    // WeChat-style layout: avatar always visible beside every message bubble
+    val avatarSize = WECHAT_AVATAR_SIZE
+    val avatarMargin = WECHAT_AVATAR_OUTER_MARGIN
+    val bubbleGap = WECHAT_AVATAR_BUBBLE_GAP
+    val senderNameStartMargin = avatarMargin + avatarSize.dp + bubbleGap
+    val avatarSlotPadding = avatarMargin + avatarSize.dp + bubbleGap
+    val layoutDirection = LocalLayoutDirection.current
+    // Show avatar only on first message of group (or standalone), use invisible spacer for others to maintain alignment
+    val showAvatarImage = event.groupPosition.isNew()
+    // Show sender name only in group chats, for others' first message in group
+    val showSenderName = event.showSenderInformation && !timelineRoomInfo.isDm
+
     fun ConstrainScope.linkStartOrEnd(event: TimelineItem.Event) = if (event.isMine) {
         end.linkTo(parent.end)
     } else {
@@ -426,29 +446,59 @@ private fun TimelineItemEventRowContent(
             .fillMaxWidth(),
     ) {
         val (
-            sender,
+            senderName,
+            avatar,
             message,
             reactions,
             pinIcon,
         ) = createRefs()
 
-        // Sender
-        if (event.showSenderInformation && !timelineRoomInfo.isDm) {
-            MessageSenderInformation(
-                event.senderId,
-                event.senderProfile,
-                event.senderAvatar,
-                onUserDataClick,
-                Modifier
-                    .constrainAs(sender) {
+        // Avatar - always present beside the bubble (WeChat style)
+        val avatarData = event.senderAvatar
+        // Sender name - only in group chats for other's first message
+        // Must be placed BEFORE avatar to avoid circular constraint references
+        if (showSenderName) {
+            val avatarColors = AvatarColorsProvider.provide(avatarData.id)
+            SenderName(
+                modifier = Modifier
+                    .constrainAs(senderName) {
                         top.linkTo(parent.top)
-                        // Required for correct RTL layout
-                        start.linkTo(parent.start)
+                        if (layoutDirection == LayoutDirection.Rtl) {
+                            end.linkTo(parent.end, margin = senderNameStartMargin)
+                        } else {
+                            start.linkTo(parent.start, margin = senderNameStartMargin)
+                        }
                     }
-                    .padding(horizontal = 16.dp)
-                    .zIndex(1f),
+                    .testTag(TestTags.timelineItemSenderName),
+                senderId = event.senderId,
+                senderProfile = event.senderProfile,
+                senderNameMode = SenderNameMode.Timeline(avatarColors.foreground),
             )
         }
+
+        // WeChat style: always render Avatar (with testTag and clickable),
+        // but hide it visually for non-first messages in a group using alpha
+        Avatar(
+            modifier = Modifier
+                .constrainAs(avatar) {
+                    if (event.isMine) {
+                        end.linkTo(parent.end, margin = avatarMargin)
+                    } else {
+                        start.linkTo(parent.start, margin = avatarMargin)
+                    }
+                    if (showAvatarImage && showSenderName) {
+                        top.linkTo(senderName.bottom, margin = 2.dp)
+                    } else {
+                        top.linkTo(parent.top)
+                    }
+                }
+                .testTag(TestTags.timelineItemSenderAvatar)
+                .graphicsLayer { alpha = if (showAvatarImage) 1f else 0f }
+                .clip(CircleShape)
+                .clickable(onClick = onUserDataClick),
+            avatarData = avatarData,
+            avatarType = AvatarType.User,
+        )
 
         // Message bubble
         val bubbleState = BubbleState(
@@ -459,17 +509,11 @@ private fun TimelineItemEventRowContent(
         MessageEventBubble(
             modifier = Modifier
                 .constrainAs(message) {
-                    val topMargin = if (bubbleState.cutTopStart) {
-                        NEGATIVE_MARGIN_FOR_BUBBLE
-                    } else {
-                        0.dp
-                    }
-                    top.linkTo(sender.bottom, margin = topMargin)
+                    top.linkTo(avatar.top)
                     if (event.isMine) {
-                        end.linkTo(parent.end, margin = 16.dp)
+                        end.linkTo(avatar.start, margin = bubbleGap)
                     } else {
-                        val startMargin = if (timelineRoomInfo.isDm) 16.dp else 16.dp + BUBBLE_INCOMING_OFFSET
-                        start.linkTo(parent.start, margin = startMargin)
+                        start.linkTo(avatar.end, margin = bubbleGap)
                     }
                 },
             state = bubbleState,
@@ -525,14 +569,9 @@ private fun TimelineItemEventRowContent(
                     }
                     .zIndex(1f)
                     .padding(
-                        // Note: due to the applied constraints, start is left for other's message and right for mine
-                        // In design we want a offset of 6.dp compare to the bubble, so start is 22.dp (16 + 6)
-                        start = when {
-                            event.isMine -> 22.dp
-                            timelineRoomInfo.isDm -> 22.dp
-                            else -> 22.dp + BUBBLE_INCOMING_OFFSET
-                        },
-                        end = 16.dp
+                        // Align reactions with the bubble edge, accounting for avatar width and gap
+                        start = if (event.isMine) 16.dp else avatarSlotPadding,
+                        end = if (event.isMine) avatarSlotPadding else 16.dp,
                     )
             )
         }

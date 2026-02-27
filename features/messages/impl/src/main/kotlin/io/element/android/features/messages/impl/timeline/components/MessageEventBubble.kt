@@ -52,6 +52,7 @@ import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.utils.time.isTalkbackActive
 
 private val BUBBLE_RADIUS = 12.dp
+private val BUBBLE_TAIL_RADIUS = 4.dp  // WeChat style: small corner near avatar (tail effect)
 private val avatarRadius = AvatarSize.TimelineSender.dp / 2
 
 private val MIN_BUBBLE_WIDTH = 80.dp
@@ -126,31 +127,43 @@ fun MessageEventBubble(
 }
 
 object MessageEventBubbleDefaults {
+    /**
+     * WeChat-style bubble shape:
+     * - The corner on the avatar side gets a small "tail" radius for the first message in a group
+     * - Grouped messages (middle) have small radius on avatar side for visual continuity
+     * - isMine: avatar is on the right, so right side corners are affected
+     * - !isMine: avatar is on the left, so left side corners are affected
+     */
     fun shape(cutTopStart: Boolean, groupPosition: TimelineItemGroupPosition, isMine: Boolean): Shape {
-        val topLeftCorner = if (cutTopStart) 0.dp else BUBBLE_RADIUS
         return when (groupPosition) {
             TimelineItemGroupPosition.First -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp, BUBBLE_RADIUS)
+                // My first msg: top-right small (near avatar), others rounded
+                RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
             } else {
-                RoundedCornerShape(topLeftCorner, BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp)
+                // Other's first msg: top-left small (near avatar), others rounded
+                RoundedCornerShape(BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
             }
             TimelineItemGroupPosition.Middle -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, 0.dp, 0.dp, BUBBLE_RADIUS)
+                // My middle msg: right side small, left side rounded
+                RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_TAIL_RADIUS, BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS)
             } else {
-                RoundedCornerShape(0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, 0.dp)
+                // Other's middle msg: left side small, right side rounded
+                RoundedCornerShape(BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_TAIL_RADIUS)
             }
             TimelineItemGroupPosition.Last -> if (isMine) {
-                RoundedCornerShape(BUBBLE_RADIUS, 0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                // My last msg: bottom-right small (near avatar), top-right small, others rounded
+                RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
             } else {
-                RoundedCornerShape(0.dp, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                // Other's last msg: bottom-left small (near avatar), top-left small, others rounded
+                RoundedCornerShape(BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
             }
             TimelineItemGroupPosition.None ->
-                RoundedCornerShape(
-                    topLeftCorner,
-                    BUBBLE_RADIUS,
-                    BUBBLE_RADIUS,
-                    BUBBLE_RADIUS
-                )
+                // Standalone message: small tail corner on avatar side top
+                if (isMine) {
+                    RoundedCornerShape(BUBBLE_RADIUS, BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                } else {
+                    RoundedCornerShape(BUBBLE_TAIL_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS, BUBBLE_RADIUS)
+                }
         }
     }
 
@@ -163,8 +176,8 @@ object MessageEventBubbleDefaults {
         }
     }
 
-    // Design says: The maximum width of a bubble is still 3/4 of the screen width. But try with 78% now.
-    const val BUBBLE_WIDTH_RATIO = 0.78f
+    // WeChat style: reduced to accommodate avatars on both sides
+    const val BUBBLE_WIDTH_RATIO = 0.70f
 }
 
 @PreviewsDayNight
