@@ -26,6 +26,7 @@ import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OidcPrompt
 import io.element.android.libraries.oidc.api.OidcAction
 import io.element.android.libraries.oidc.api.OidcActionFlow
+import timber.log.Timber
 
 /**
  * This class is responsible for managing the login flow, including handling OIDC actions and
@@ -62,8 +63,10 @@ class LoginHelper(
         homeserverUrl: String,
         loginHint: String?,
     ) {
+        Timber.d("LOGIN_DEBUG: submit() called with homeserverUrl=$homeserverUrl")
         suspend {
             authenticationService.setHomeserver(homeserverUrl).map { matrixHomeServerDetails ->
+                Timber.d("LOGIN_DEBUG: setHomeserver success. supportsOidc=${matrixHomeServerDetails.supportsOidcLogin}, supportsPassword=${matrixHomeServerDetails.supportsPasswordLogin}")
                 if (matrixHomeServerDetails.supportsOidcLogin) {
                     // Retrieve the details right now
                     val oidcPrompt = if (isAccountCreation) OidcPrompt.Create else OidcPrompt.Login
@@ -82,6 +85,7 @@ class LoginHelper(
         }.runCatchingUpdatingState(
             state = loginModeState,
             errorTransform = {
+                Timber.e(it, "LOGIN_DEBUG: submit() error: ${it::class.qualifiedName} - ${it.message}")
                 when (it) {
                     is AccountCreationNotSupported -> it
                     else -> ChangeServerError.from(it)

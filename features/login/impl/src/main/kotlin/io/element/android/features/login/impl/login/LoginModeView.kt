@@ -108,8 +108,11 @@ fun LoginModeView(
                     )
                 }
                 else -> {
+                    val errorMessage = loginMode.error.let { e ->
+                        "${e::class.simpleName}: ${e.message ?: stringResource(CommonStrings.error_unknown)}"
+                    }
                     ErrorDialog(
-                        content = stringResource(CommonStrings.error_unknown),
+                        content = errorMessage,
                         onSubmit = onClearError,
                     )
                 }
