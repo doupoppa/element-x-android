@@ -31,6 +31,8 @@ open class OnBoardingStateProvider : PreviewParameterProvider<OnBoardingState> {
                 canLoginWithQrCode = true,
                 canCreateAccount = true,
             ),
+            anOnBoardingState(showSplash = true),
+            anOnBoardingState(showSplash = true, customLogoResId = R.drawable.sample_background),
         )
 }
 
@@ -47,6 +49,7 @@ fun anOnBoardingState(
     customLogoResId: Int? = null,
     loginMode: AsyncData<LoginMode> = AsyncData.Uninitialized,
     loginWithClassicState: LoginWithClassicState = aLoginWithClassicState(),
+    showSplash: Boolean = false,
     eventSink: (OnBoardingEvents) -> Unit = {},
 ) = OnBoardingState(
     isAddingAccount = isAddingAccount,
@@ -60,5 +63,6 @@ fun anOnBoardingState(
     loginMode = loginMode,
     onBoardingLogoResId = customLogoResId,
     loginWithClassicState = loginWithClassicState,
+    showSplash = showSplash,
     eventSink = eventSink,
 )

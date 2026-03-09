@@ -109,12 +109,20 @@ fun OnBoardingView(
             onBackClick = onBackClick,
         )
     } else {
-        AddFirstAccountScaffold(
-            modifier = modifier,
-            state = state,
-            loginView = loginView,
-            buttons = buttons,
-        )
+        Box(modifier = modifier) {
+            AddFirstAccountScaffold(
+                state = state,
+                loginView = loginView,
+                buttons = buttons,
+            )
+            // Splash poster overlay: covers the onboarding screen during initial auto-login
+            if (state.showSplash) {
+                SplashPosterOverlay(
+                    onBoardingLogoResId = state.onBoardingLogoResId,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
     }
 
     LoginWithElementClassicView(

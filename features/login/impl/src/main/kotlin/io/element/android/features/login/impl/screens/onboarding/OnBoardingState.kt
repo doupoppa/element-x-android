@@ -26,6 +26,7 @@ data class OnBoardingState(
     val onBoardingLogoResId: Int?,
     val loginMode: AsyncData<LoginMode>,
     val loginWithClassicState: LoginWithClassicState,
+    val showSplash: Boolean,
     val eventSink: (OnBoardingEvents) -> Unit,
 ) {
     val submitEnabled: Boolean

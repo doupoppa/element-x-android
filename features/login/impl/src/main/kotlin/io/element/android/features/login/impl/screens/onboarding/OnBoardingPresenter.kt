@@ -27,8 +27,10 @@ import io.element.android.features.enterprise.api.canConnectToAnyHomeserver
 import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.login.LoginHelper
+import io.element.android.features.login.impl.login.LoginMode
 import io.element.android.features.login.impl.screens.onboarding.classic.LoginWithClassicState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -123,6 +125,20 @@ class OnBoardingPresenter(
 
         val loginMode by loginHelper.collectLoginMode()
 
+        // Splash screen logic: show splash until OIDC Chrome tab opens for the first time
+        var hasOidcOpened by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(loginMode) {
+            if (!hasOidcOpened && loginMode is AsyncData.Success) {
+                val mode = (loginMode as AsyncData.Success).data
+                if (mode is LoginMode.Oidc) {
+                    hasOidcOpened = true
+                }
+            }
+        }
+        // Show splash only during the initial auto-login (before Chrome opens)
+        // Don't show splash if there's an error (user needs to see it)
+        val showSplash = !hasOidcOpened && loginMode !is AsyncData.Failure
+
         val loginWithClassicState = loginWithClassicPresenter.present()
 
         fun handleEvent(event: OnBoardingEvents) {
@@ -159,6 +175,7 @@ class OnBoardingPresenter(
             version = buildMeta.versionName,
             onBoardingLogoResId = onBoardingLogoResId,
             loginWithClassicState = loginWithClassicState,
+            showSplash = showSplash,
             eventSink = ::handleEvent,
         )
     }

@@ -39,7 +39,7 @@ ENABLE_CACHE=true
 ENABLE_PARALLEL=true
 ENABLE_CONFIG_CACHE=true
 GRADLE_OPTS="-Xmx4g -XX:+UseG1GC"
-BUILD_VARIANT="ReleaseFdroid"
+BUILD_VARIANT="FdroidRelease"
 
 # 记录编译时间
 START_TIME=$(date +%s)
