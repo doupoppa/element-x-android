@@ -7,7 +7,7 @@
 # Please see LICENSE files in the repository root for full details.
 #
 
-# Element X Android - 增量编译脚本（仅编译改动部分）
+# GTalk - 增量编译脚本（仅编译改动部分）
 # 用途：快速编译签名的 F-Droid Release APK，节省编译时间
 
 set -e  # 任何错误都会退出脚本
@@ -25,7 +25,7 @@ PROJECT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BUILD_OUTPUT="$PROJECT_DIR/app/build/outputs/apk/fdroid/release"
 
 echo -e "${BLUE}╔═════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Element X Android - 增量编译脚本                          ║${NC}"
+echo -e "${BLUE}║  GTalk - 增量编译脚本                                       ║${NC}"
 echo -e "${BLUE}║  仅编译改动部分，与原编译产物链接                         ║${NC}"
 echo -e "${BLUE}╠═════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${BLUE}║  Homeserver: https://matrix.cacheskysx.com                 ║${NC}"

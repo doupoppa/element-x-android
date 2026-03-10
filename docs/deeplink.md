@@ -1,4 +1,4 @@
-# Element X Android deeplink
+# GTalk Android deeplink
 
 <!--- TOC -->
 
@@ -12,7 +12,7 @@
 
 ## Introduction
 
-Element X Android supports deep linking to specific screens in the application. This document explains how to use deep links in Element X Android.
+GTalk Android supports deep linking to specific screens in the application. This document explains how to use deep links in GTalk Android.
 
 ### Asset Links
 
@@ -20,7 +20,7 @@ The asset links file is available at https://element.io/.well-known/assetlinks.j
 
 ### Supported links
 
-Element Call link: 
+GTalk Call link: 
 > https://call.element.io/Example
 
 Link to a user:

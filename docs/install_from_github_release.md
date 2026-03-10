@@ -1,6 +1,6 @@
-# Installing Element X Android from a Github Release
+# Installing GTalk Android from a Github Release
 
-This document explains how to install Element X Android from a Github Release.
+This document explains how to install GTalk Android from a Github Release.
 
 <!--- TOC -->
 
@@ -42,9 +42,9 @@ If the application was already installed on your phone, there are several cases:
 
 ### Requirements
 
-The Github release will contain an Android App Bundle (with `aab` extension) file, unlike in the Element Android project where releases directly provide the APKs. So there are some steps to perform to generate and sign App Bundle APKs. An APK suitable for the targeted device will then be generated.
+The Github release will contain an Android App Bundle (with `aab` extension) file, unlike in the previous Android project where releases directly provide the APKs. So there are some steps to perform to generate and sign App Bundle APKs. An APK suitable for the targeted device will then be generated.
 
-The easiest way to do that is to use the debug signature that is shared between the developers and stored in the Element X Android project. So we recommend to clone the project first, to be able to use the debug signature it contains. But note that you can use any other signature. You don't need to install Android Studio, you will only need a shell terminal.
+The easiest way to do that is to use the debug signature that is shared between the developers and stored in the GTalk Android project. So we recommend to clone the project first, to be able to use the debug signature it contains. But note that you can use any other signature. You don't need to install Android Studio, you will only need a shell terminal.
 
 You can clone the project by running:
 ```bash

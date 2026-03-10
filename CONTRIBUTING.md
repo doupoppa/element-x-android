@@ -1,4 +1,4 @@
-# Contributing to Element X Android
+# Contributing to GTalk Android
 
 <!--- TOC -->
 
@@ -8,8 +8,8 @@
 * [Compilation](#compilation)
 * [Strings](#strings)
   * [I want to add new strings to the project](#i-want-to-add-new-strings-to-the-project)
-  * [I want to help translating Element](#i-want-to-help-translating-element)
-  * [Element X Android Gallery](#element-x-android-gallery)
+  * [I want to help translating GTalk](#i-want-to-help-translating-gtalk)
+  * [GTalk Android Gallery](#gtalk-android-gallery)
 * [I want to submit a PR to fix an issue](#i-want-to-submit-a-pr-to-fix-an-issue)
   * [Kotlin](#kotlin)
   * [Changelog](#changelog)
@@ -34,9 +34,9 @@ For a detailed overview of the project, see [Developer Onboarding](./docs/_devel
 
 ## Contributing code to Matrix
 
-If instead of contributing to the Element X Android project, you want to contribute to Synapse, the homeserver implementation, please read the [Synapse contribution guide](https://element-hq.github.io/synapse/latest/development/contributing_guide.html).
+If instead of contributing to the GTalk Android project, you want to contribute to Synapse, the homeserver implementation, please read the [Synapse contribution guide](https://element-hq.github.io/synapse/latest/development/contributing_guide.html).
 
-Element X Android support can be found in this room: [![Element X Android Matrix room #element-x-android:matrix.org](https://img.shields.io/matrix/element-x-android:matrix.org.svg?label=%23element-x-android:matrix.org&logo=matrix&server_fqdn=matrix.org)](https://matrix.to/#/#element-x-android:matrix.org).
+GTalk Android support can be found in this room: [![GTalk Android Matrix room #element-x-android:matrix.org](https://img.shields.io/matrix/element-x-android:matrix.org.svg?label=%23element-x-android:matrix.org&logo=matrix&server_fqdn=matrix.org)](https://matrix.to/#/#element-x-android:matrix.org).
 
 The rest of the document contains specific rules for Matrix Android projects.
 
@@ -51,7 +51,7 @@ This project should compile without any special action. Just clone it and open i
 
 ## Strings
 
-The strings of the project are managed externally using [https://localazy.com](https://localazy.com) and shared with Element X iOS.
+The strings of the project are managed externally using [https://localazy.com](https://localazy.com) and shared with GTalk iOS.
 
 ### I want to add new strings to the project
 
@@ -59,22 +59,22 @@ Only the core team can modify or add English strings to Localazy. As an external
 
 Please follow the naming rules for the key. More details in [the dedicated section in this README.md](./tools/localazy/README.md#key-naming-rules)
 
-### I want to help translating Element
+### I want to help translating GTalk
 
 To help translating, please go to [https://localazy.com/p/element](https://localazy.com/p/element).
 
-- If you want to fix an issue with an English string, please open an issue on the github project of Element X (Android or iOS). Only the core team can modify or add English strings.
+- If you want to fix an issue with an English string, please open an issue on the GitHub project of GTalk (Android or iOS). Only the core team can modify or add English strings.
 - If you want to fix an issue in other languages, or add a missing translation, or even add a new language, please go to [https://localazy.com/p/element](https://localazy.com/p/element).
 
 More information can be found [in this README.md](./tools/localazy/README.md).
 
 Once a language is sufficiently translated, it will be added to the app. The core team will decide when a language is sufficiently translated.
 
-### Element X Android Gallery
+### GTalk Android Gallery
 
-Once added to Localazy, translations can be checked screen per screen using our tool Element X Android Gallery, available at https://element-hq.github.io/element-x-android/.
+Once added to Localazy, translations can be checked screen per screen using our tool GTalk Android Gallery, available at https://element-hq.github.io/element-x-android/.
 
-Localazy syncs occur every Monday and the screenshots on this page are generated every Tuesday, so you'll have to wait to see your change appearing on Element X Android Gallery.
+Localazy syncs occur every Monday and the screenshots on this page are generated every Tuesday, so you'll have to wait to see your change appearing on GTalk Android Gallery.
 
 ## I want to submit a PR to fix an issue
 
@@ -160,7 +160,7 @@ Make sure the following commands execute without any error:
 
 ### Tests
 
-Element X is currently supported on Android Marshmallow (API 23+): please test your change on an Android device (or Android emulator) running with API 23. Many issues can happen (including crashes) on older devices.
+GTalk is currently supported on Android Marshmallow (API 23+): please test your change on an Android device (or Android emulator) running with API 23. Many issues can happen (including crashes) on older devices.
 Also, if possible, please test your change on a real device. Testing on Android emulator may not be sufficient.
 
 You should consider adding Unit tests with your PR, and also integration tests (AndroidTest). Please refer to [this document](./docs/integration_tests.md) to install and run the integration test environment.

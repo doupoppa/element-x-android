@@ -2,13 +2,13 @@ A full developer contributors list can be found [here](https://github.com/elemen
 
 # Core team:
 
-The element.io Android developer team.
+The GTalk Android developer team.
 
 # Other contributors
 
-First of all, we thank all contributors who use Element and report problems on this GitHub project or via the integrated rageshake function.
+First of all, we thank all contributors who use GTalk and report problems on this GitHub project or via the integrated rageshake function.
 
-We do not forget all translators, for their work of translating Element into many languages. They are also the authors of Element.
+We do not forget all translators, for their work of translating GTalk into many languages. They are also authors of GTalk.
 
 Feel free to add your name below, when you contribute to the project!
 
