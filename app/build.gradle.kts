@@ -243,6 +243,10 @@ android {
             useLegacyPackaging = project.findProperty("useLegacyPackaging")?.toString()?.toBoolean()
         }
     }
+
+    lint {
+        baseline = file("lint.xml")
+    }
 }
 
 androidComponents {
