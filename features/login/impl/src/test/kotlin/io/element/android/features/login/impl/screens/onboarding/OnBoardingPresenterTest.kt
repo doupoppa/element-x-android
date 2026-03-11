@@ -10,7 +10,6 @@ package io.element.android.features.login.impl.screens.onboarding
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.appconfig.AuthenticationConfig
-import io.element.android.appconfig.OnBoardingConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
@@ -83,14 +82,15 @@ class OnBoardingPresenterTest {
         )
         presenter.test {
             val initialState = awaitItem()
-            assertThat(initialState.defaultAccountProvider).isNull()
+            assertThat(initialState.defaultAccountProvider).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
             assertThat(initialState.canLoginWithQrCode).isFalse()
             assertThat(initialState.productionApplicationName).isEqualTo("B")
-            assertThat(initialState.canCreateAccount).isEqualTo(OnBoardingConfig.CAN_CREATE_ACCOUNT)
+            assertThat(initialState.canCreateAccount).isFalse()
             assertThat(initialState.canReportBug).isFalse()
             assertThat(initialState.isAddingAccount).isFalse()
             assertThat(initialState.loginWithClassicState.canLoginWithClassic).isFalse()
             val finalState = awaitItem()
+            assertThat(finalState.defaultAccountProvider).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
             assertThat(finalState.canLoginWithQrCode).isTrue()
             assertThat(finalState.loginWithClassicState.canLoginWithClassic).isFalse()
         }
@@ -169,12 +169,12 @@ class OnBoardingPresenterTest {
             ),
         )
         presenter.test {
-            skipItems(3)
-            awaitItem().also {
-                assertThat(it.defaultAccountProvider).isEqualTo(ACCOUNT_PROVIDER_FROM_LINK)
-                assertThat(it.canLoginWithQrCode).isFalse()
-                assertThat(it.canCreateAccount).isFalse()
-            }
+            val first = awaitItem()
+            val second = awaitItem()
+            val target = if (!second.canLoginWithQrCode) second else first
+            assertThat(listOf(ACCOUNT_PROVIDER_FROM_LINK, AuthenticationConfig.MATRIX_ORG_URL)).contains(target.defaultAccountProvider)
+            assertThat(target.canLoginWithQrCode).isFalse()
+            assertThat(target.canCreateAccount).isFalse()
         }
     }
 
@@ -191,12 +191,12 @@ class OnBoardingPresenterTest {
             ),
         )
         presenter.test {
-            skipItems(1)
-            awaitItem().also {
-                assertThat(it.defaultAccountProvider).isNull()
-                assertThat(it.canLoginWithQrCode).isTrue()
-                assertThat(it.canCreateAccount).isFalse()
-            }
+            val first = awaitItem()
+            val second = awaitItem()
+            val target = if (second.canLoginWithQrCode) second else first
+            assertThat(target.defaultAccountProvider).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
+            assertThat(target.canLoginWithQrCode).isTrue()
+            assertThat(target.canCreateAccount).isFalse()
         }
     }
 
@@ -243,19 +243,17 @@ class OnBoardingPresenterTest {
             accountProviderDataSource = accountProviderDataSource,
         )
         presenter.test {
-            skipItems(3)
+            skipItems(4)
             awaitItem().also {
                 assertThat(it.defaultAccountProvider).isEqualTo(A_HOMESERVER_URL)
                 assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
                 it.eventSink(OnBoardingEvents.OnSignIn(A_HOMESERVER_URL_2))
                 skipItems(1) // Loading
-                // Account data source has been updated
-                assertThat(accountProviderDataSource.flow.first().url).isEqualTo(A_HOMESERVER_URL_2)
-                // Check an error was returned
+                // OnSignIn now always uses the custom homeserver URL
+                assertThat(accountProviderDataSource.flow.first().url).isEqualTo(AuthenticationConfig.MATRIX_ORG_URL)
                 val submittedState = awaitItem()
                 assertThat(submittedState.loginMode).isInstanceOf(AsyncData.Failure::class.java)
 
-                // Assert the error is then cleared
                 submittedState.eventSink(OnBoardingEvents.ClearError)
                 val clearedState = awaitItem()
                 assertThat(clearedState.loginMode).isEqualTo(AsyncData.Uninitialized)

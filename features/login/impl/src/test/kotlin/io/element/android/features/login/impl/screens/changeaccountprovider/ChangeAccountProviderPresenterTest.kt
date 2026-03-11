@@ -9,6 +9,7 @@
 package io.element.android.features.login.impl.screens.changeaccountprovider
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.appconfig.AuthenticationConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.impl.accountprovider.AccountProvider
@@ -25,6 +26,9 @@ class ChangeAccountProviderPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
 
+    private val defaultUrl = AuthenticationConfig.MATRIX_ORG_URL
+    private val defaultTitle = AuthenticationConfig.MATRIX_ORG_URL.removePrefix("https://").removePrefix("http://")
+
     @Test
     fun `present - initial state`() = runTest {
         val presenter = ChangeAccountProviderPresenter(
@@ -38,8 +42,8 @@ class ChangeAccountProviderPresenterTest {
             assertThat(initialState.accountProviders).isEqualTo(
                 listOf(
                     AccountProvider(
-                        url = "https://matrix.org",
-                        title = "matrix.org",
+                        url = defaultUrl,
+                        title = defaultTitle,
                         subtitle = null,
                         isPublic = true,
                         isMatrixOrg = true,
@@ -65,15 +69,15 @@ class ChangeAccountProviderPresenterTest {
             assertThat(initialState.accountProviders).isEqualTo(
                 listOf(
                     AccountProvider(
-                        url = "https://matrix.org",
-                        title = "matrix.org",
+                        url = "https://$AN_ACCOUNT_PROVIDER",
+                        title = AN_ACCOUNT_PROVIDER,
                         subtitle = null,
-                        isPublic = true,
-                        isMatrixOrg = true,
+                        isPublic = false,
+                        isMatrixOrg = false,
                     ),
                     AccountProvider(
-                        url = "https://element.io",
-                        title = "element.io",
+                        url = "https://$AN_ACCOUNT_PROVIDER_2",
+                        title = AN_ACCOUNT_PROVIDER_2,
                         subtitle = null,
                         isPublic = false,
                         isMatrixOrg = false,
@@ -99,11 +103,11 @@ class ChangeAccountProviderPresenterTest {
             assertThat(initialState.accountProviders).isEqualTo(
                 listOf(
                     AccountProvider(
-                        url = "https://matrix.org",
-                        title = "matrix.org",
+                        url = "https://$AN_ACCOUNT_PROVIDER",
+                        title = AN_ACCOUNT_PROVIDER,
                         subtitle = null,
-                        isPublic = true,
-                        isMatrixOrg = true,
+                        isPublic = false,
+                        isMatrixOrg = false,
                     )
                 )
             )

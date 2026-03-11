@@ -22,6 +22,8 @@ class AccountProviderDataSourceTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
 
+    private val defaultTitle = AuthenticationConfig.MATRIX_ORG_URL.removePrefix("https://").removePrefix("http://")
+
     @Test
     fun `present - initial state`() = runTest {
         val sut = AccountProviderDataSource(FakeEnterpriseService())
@@ -30,7 +32,7 @@ class AccountProviderDataSourceTest {
             assertThat(initialState).isEqualTo(
                 AccountProvider(
                     url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    title = defaultTitle,
                     subtitle = null,
                     isPublic = true,
                     isMatrixOrg = true,
@@ -51,7 +53,7 @@ class AccountProviderDataSourceTest {
             assertThat(initialState).isEqualTo(
                 AccountProvider(
                     url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    title = defaultTitle,
                     subtitle = null,
                     isPublic = true,
                     isMatrixOrg = true,
@@ -72,7 +74,7 @@ class AccountProviderDataSourceTest {
             assertThat(initialState).isEqualTo(
                 AccountProvider(
                     url = AuthenticationConfig.MATRIX_ORG_URL,
-                    title = "matrix.org",
+                    title = defaultTitle,
                     subtitle = null,
                     isPublic = true,
                     isMatrixOrg = true,
