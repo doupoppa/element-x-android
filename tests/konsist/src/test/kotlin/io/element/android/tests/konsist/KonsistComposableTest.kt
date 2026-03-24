@@ -47,6 +47,9 @@ class KonsistComposableTest {
                 "CompoundSemanticColorsLightHc",
                 "CompoundSemanticColorsDark",
                 "CompoundSemanticColorsDarkHc",
+                "HorizontalFloatingToolbarItem",
+                "HorizontalFloatingToolbarSeparator",
+                "DebugNavStateNodeHost",
             )
             .assertTrue(
                 additionalMessage =

@@ -11,13 +11,13 @@ package io.element.android.features.home.impl.filters
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.home.impl.filters.selection.DefaultFilterSelectionStrategy
 import io.element.android.features.home.impl.filters.selection.FilterSelectionState
-import io.element.android.libraries.matrix.api.roomlist.RoomListService
-import io.element.android.libraries.matrix.test.roomlist.FakeRoomListService
 import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import io.element.android.libraries.matrix.api.roomlist.RoomListFilter as MatrixRoomListFilter
 
 class RoomListFiltersPresenterTest {
     @Test
@@ -39,13 +39,12 @@ class RoomListFiltersPresenterTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `present - toggle rooms filter`() = runTest {
-        val roomListService = FakeRoomListService()
-        val presenter = createRoomListFiltersPresenter(roomListService)
+        val presenter = createRoomListFiltersPresenter()
         presenter.test {
             awaitItem().eventSink.invoke(RoomListFiltersEvent.ToggleFilter(RoomListFilter.Rooms))
             awaitLastSequentialItem().let { state ->
-
                 assertThat(state.hasAnyFilterSelected).isTrue()
                 assertThat(state.filterSelectionStates).containsExactly(
                     filterSelectionState(RoomListFilter.Rooms, true),
@@ -56,12 +55,9 @@ class RoomListFiltersPresenterTest {
                 assertThat(state.selectedFilters()).containsExactly(
                     RoomListFilter.Rooms,
                 )
-                val roomListCurrentFilter = roomListService.allRooms.currentFilter.value as MatrixRoomListFilter.All
-                assertThat(roomListCurrentFilter.filters).containsExactly(
-                    MatrixRoomListFilter.Category.Group,
-                )
                 state.eventSink.invoke(RoomListFiltersEvent.ToggleFilter(RoomListFilter.Rooms))
             }
+            advanceUntilIdle()
             awaitLastSequentialItem().let { state ->
                 assertThat(state.hasAnyFilterSelected).isFalse()
                 assertThat(state.filterSelectionStates).containsExactly(
@@ -72,22 +68,21 @@ class RoomListFiltersPresenterTest {
                     filterSelectionState(RoomListFilter.Invites, false),
                 ).inOrder()
                 assertThat(state.selectedFilters()).isEmpty()
-                val roomListCurrentFilter = roomListService.allRooms.currentFilter.value as MatrixRoomListFilter.All
-                assertThat(roomListCurrentFilter.filters).isEmpty()
             }
         }
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `present - clear filters event`() = runTest {
-        val roomListService = FakeRoomListService()
-        val presenter = createRoomListFiltersPresenter(roomListService)
+        val presenter = createRoomListFiltersPresenter()
         presenter.test {
             awaitItem().eventSink.invoke(RoomListFiltersEvent.ToggleFilter(RoomListFilter.Rooms))
             awaitLastSequentialItem().let { state ->
                 assertThat(state.hasAnyFilterSelected).isTrue()
                 state.eventSink.invoke(RoomListFiltersEvent.ClearSelectedFilters)
             }
+            advanceUntilIdle()
             awaitLastSequentialItem().let { state ->
                 assertThat(state.hasAnyFilterSelected).isFalse()
             }
@@ -100,11 +95,8 @@ private fun filterSelectionState(filter: RoomListFilter, selected: Boolean) = Fi
     isSelected = selected,
 )
 
-private fun createRoomListFiltersPresenter(
-    roomListService: RoomListService = FakeRoomListService(),
-): RoomListFiltersPresenter {
+private fun TestScope.createRoomListFiltersPresenter(): RoomListFiltersPresenter {
     return RoomListFiltersPresenter(
-        roomListService = roomListService,
         filterSelectionStrategy = DefaultFilterSelectionStrategy(),
     )
 }

@@ -112,13 +112,19 @@ class IncomingCallActivity : AppCompatActivity() {
     }
 
     private fun onAnswer(notificationData: CallNotificationData) {
-        elementCallEntryPoint.startCall(CallType.RoomCall(notificationData.sessionId, notificationData.roomId))
+        elementCallEntryPoint.startCall(
+            CallType.RoomCall(
+                notificationData.sessionId,
+                notificationData.roomId,
+                isAudioCall = notificationData.audioOnly
+            )
+        )
     }
 
     private fun onCancel() {
         val activeCall = activeCallManager.activeCall.value ?: return
         appCoroutineScope.launch {
-            activeCallManager.hungUpCall(callType = activeCall.callType)
+            activeCallManager.hangUpCall(callType = activeCall.callType)
         }
     }
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="a11y_add_reaction">"Přidat reakci: %1$s"</string>
+  <string name="a11y_address">"Adresa"</string>
   <string name="a11y_avatar">"Profilový obrázek"</string>
   <string name="a11y_collapse_message_text_field">"Minimalizovat textové pole zprávy"</string>
   <string name="a11y_delete">"Smazat"</string>
@@ -27,9 +28,12 @@
   <string name="a11y_pause">"Pozastavit"</string>
   <string name="a11y_paused_voice_message">"Hlasová zpráva, délka: %1$s, aktuální pozice: %2$s"</string>
   <string name="a11y_pin_field">"Pole pro PIN"</string>
+  <string name="a11y_pinned_location">"Připnutá poloha"</string>
   <string name="a11y_play">"Přehrát"</string>
+  <string name="a11y_playback_speed">"Rychlost přehrávání"</string>
   <string name="a11y_poll">"Hlasování"</string>
   <string name="a11y_poll_end">"Hlasování ukončeno"</string>
+  <string name="a11y_qr_code">"QR kód"</string>
   <string name="a11y_react_with">"Reagovat s %1$s"</string>
   <string name="a11y_react_with_other_emojis">"Reagovat s dalšími emoji"</string>
   <string name="a11y_read_receipts_multiple">"%1$s a %2$s přečetli"</string>
@@ -44,9 +48,11 @@
   <string name="a11y_remove_reaction_with">"Odstranit reakci pomocí %1$s"</string>
   <string name="a11y_room_avatar">"Avatar místnosti"</string>
   <string name="a11y_send_files">"Odeslat soubory"</string>
+  <string name="a11y_sender_location">"Poloha odesílatele"</string>
   <string name="a11y_session_verification_time_limited_action_required">"Vyžaduje se časově omezená akce, na ověření máte jednu minutu"</string>
   <string name="a11y_show_password">"Zobrazit heslo"</string>
   <string name="a11y_start_call">"Zahájit hovor"</string>
+  <string name="a11y_start_voice_call">"Zahájit hlasový hovor"</string>
   <string name="a11y_tombstoned_room">"Místnost s náhrobkem"</string>
   <string name="a11y_user_avatar">"Avatar uživatele"</string>
   <string name="a11y_user_menu">"Uživatelské menu"</string>
@@ -58,6 +64,7 @@
   <string name="a11y_your_avatar">"Váš avatar"</string>
   <string name="action_accept">"Přijmout"</string>
   <string name="action_add_caption">"Přidat titulek"</string>
+  <string name="action_add_existing_rooms">"Přidat stávající místnosti"</string>
   <string name="action_add_to_timeline">"Přidat na časovou osu"</string>
   <string name="action_back">"Zpět"</string>
   <string name="action_call">"Hovor"</string>
@@ -77,6 +84,7 @@
   <string name="action_copy_text">"Kopírovat text"</string>
   <string name="action_create">"Vytvořit"</string>
   <string name="action_create_room">"Vytvořit místnost"</string>
+  <string name="action_create_space">"Vytvořte prostor"</string>
   <string name="action_deactivate">"Deaktivovat"</string>
   <string name="action_deactivate_account">"Deaktivovat účet"</string>
   <string name="action_decline">"Odmítnout"</string>
@@ -93,6 +101,7 @@
   <string name="action_enable">"Povolit"</string>
   <string name="action_end_poll">"Ukončit hlasování"</string>
   <string name="action_enter_pin">"Zadejte PIN"</string>
+  <string name="action_explore_public_spaces">"Prozkoumejte veřejné prostory"</string>
   <string name="action_finish">"Dokončit"</string>
   <string name="action_forgot_password">"Zapomněli jste heslo?"</string>
   <string name="action_forward">"Přeposlat"</string>
@@ -152,6 +161,7 @@
   <string name="action_send_voice_message">"Odeslat hlasovou zprávu"</string>
   <string name="action_share">"Sdílet"</string>
   <string name="action_share_link">"Sdílet odkaz"</string>
+  <string name="action_share_live_location">"Sdílet aktuální polohu"</string>
   <string name="action_show">"Zobrazit"</string>
   <string name="action_sign_in_again">"Přihlásit se znovu"</string>
   <string name="action_signout">"Odhlásit se"</string>
@@ -194,6 +204,7 @@
   <string name="common_copied_to_clipboard">"Zkopírováno do schránky"</string>
   <string name="common_copyright">"Autorská práva"</string>
   <string name="common_creating_room">"Vytváření místnosti…"</string>
+  <string name="common_creating_space">"Vytváření prostoru…"</string>
   <string name="common_current_user_canceled_knock">"Žádost zrušena"</string>
   <string name="common_current_user_left_room">"Místnost opuštěna"</string>
   <string name="common_current_user_left_space">"Opustit prostor"</string>
@@ -268,6 +279,7 @@ Důvod: %1$s."</string>
   <string name="common_offline">"Offline"</string>
   <string name="common_open_source_licenses">"Licence s otevřeným zdrojovým kódem"</string>
   <string name="common_or">"nebo"</string>
+  <string name="common_other_options">"Další možnosti"</string>
   <string name="common_password">"Heslo"</string>
   <string name="common_people">"Lidé"</string>
   <string name="common_permalink">"Trvalý odkaz"</string>
@@ -286,8 +298,10 @@ Důvod: %1$s."</string>
   </plurals>
   <string name="common_preparing">"Příprava…"</string>
   <string name="common_privacy_policy">"Zásady ochrany osobních údajů"</string>
+  <string name="common_private">"Soukromé"</string>
   <string name="common_private_room">"Soukromá místnost"</string>
   <string name="common_private_space">"Soukromý prostor"</string>
+  <string name="common_public">"Veřejné"</string>
   <string name="common_public_room">"Veřejná místnost"</string>
   <string name="common_public_space">"Veřejný prostor"</string>
   <string name="common_reaction">"Reakce"</string>
@@ -295,6 +309,7 @@ Důvod: %1$s."</string>
   <string name="common_reason">"Důvod"</string>
   <string name="common_recovery_key">"Klíč pro obnovení"</string>
   <string name="common_refreshing">"Obnovování…"</string>
+  <string name="common_removing">"Odstraňování…"</string>
   <plurals name="common_replies">
     <item quantity="other">"%1$d odpovědí"</item>
   </plurals>
@@ -303,6 +318,7 @@ Důvod: %1$s."</string>
   <string name="common_report_a_problem">"Nahlásit problém"</string>
   <string name="common_report_submitted">"Zpráva odeslána"</string>
   <string name="common_rich_text_editor">"Editor formátovaného textu"</string>
+  <string name="common_role">"Role"</string>
   <string name="common_room">"Místnost"</string>
   <string name="common_room_name">"Název místnosti"</string>
   <string name="common_room_name_placeholder">"např. název vašeho projektu"</string>
@@ -319,6 +335,11 @@ Důvod: %1$s."</string>
   <string name="common_security">"Zabezpečení"</string>
   <string name="common_seen_by">"Viděno"</string>
   <string name="common_select_account">"Vybrat účet"</string>
+  <plurals name="common_selected_count">
+    <item quantity="one">"%1$d vybraný"</item>
+    <item quantity="few">"%1$d vybrané"</item>
+    <item quantity="other">"%1$d vybraných"</item>
+  </plurals>
   <string name="common_send_to">"Odeslat do"</string>
   <string name="common_sending">"Odesílání…"</string>
   <string name="common_sending_failed">"Odeslání se nezdařilo"</string>
@@ -329,12 +350,14 @@ Důvod: %1$s."</string>
   <string name="common_server_url">"URL serveru"</string>
   <string name="common_settings">"Nastavení"</string>
   <string name="common_share_space">"Sdílet prostor"</string>
+  <string name="common_shared_history">"Noví členové vidí historii"</string>
   <string name="common_shared_location">"Sdílená poloha"</string>
   <string name="common_shared_space">"Sdílený prostor"</string>
   <string name="common_signing_out">"Odhlašování"</string>
   <string name="common_something_went_wrong">"Něco se nepovedlo"</string>
   <string name="common_something_went_wrong_message">"Narazili jsme na problém. Zkuste to prosím znovu."</string>
   <string name="common_space">"Prostor"</string>
+  <string name="common_space_members">"Členové prostoru"</string>
   <string name="common_space_topic_placeholder">"O čem je tento prostor?"</string>
   <plurals name="common_spaces">
     <item quantity="one">"%1$d prostor"</item>
@@ -344,6 +367,7 @@ Důvod: %1$s."</string>
   <string name="common_starting_chat">"Zahajování chatu…"</string>
   <string name="common_sticker">"Nálepka"</string>
   <string name="common_success">"Úspěch"</string>
+  <string name="common_suggested">"Doporučeno"</string>
   <string name="common_suggestions">"Návrhy"</string>
   <string name="common_syncing">"Synchronizace"</string>
   <string name="common_system">"Systém"</string>
@@ -380,7 +404,10 @@ Důvod: %1$s."</string>
   <string name="common_voice_message">"Hlasová zpráva"</string>
   <string name="common_waiting">"Čekání…"</string>
   <string name="common_waiting_for_decryption_key">"Čekání na dešifrovací klíč"</string>
+  <string name="common_world_readable_history">"Kdokoli může vidět historii"</string>
   <string name="common_you">"Vy"</string>
+  <string name="crypto_event_key_forwarded_known_profile_dialog_content">"%1$s (%2$s) sdílel(a) tuto zprávu v době, kdy jste nebyli v místnosti."</string>
+  <string name="crypto_event_key_forwarded_unknown_profile_dialog_content">"%1$s sdílel(a) tuto zprávu v době, kdy jste nebyli v místnosti."</string>
   <string name="crypto_history_visible">"Tato místnost byla nastavena tak, aby noví členové mohli číst historii. %1$s"</string>
   <string name="crypto_identity_change_pin_violation">"Identita uživatele %1$s se změnila. %2$s"</string>
   <string name="crypto_identity_change_pin_violation_new">"Identita uživatele %1$s %2$s se změnila. %3$s"</string>
@@ -388,6 +415,7 @@ Důvod: %1$s."</string>
   <string name="crypto_identity_change_profile_pin_violation">"Identita uživatele %1$s se změnila."</string>
   <string name="crypto_identity_change_verification_violation_new">"Identita uživatele %1$s %2$s se změnila. %3$s"</string>
   <string name="crypto_identity_change_withdraw_verification_action">"Zrušit ověření"</string>
+  <string name="dialog_allow_access">"Povolit přístup"</string>
   <string name="dialog_confirm_link_message">"Odkaz %1$s vás přesměruje na jinou stránku %2$s
 
 Opravdu chcete pokračovat?"</string>
@@ -436,6 +464,7 @@ Opravdu chcete pokračovat?"</string>
   <string name="screen_create_poll_remove_accessibility_label">"Odstranit %1$s"</string>
   <string name="screen_create_poll_settings_section_title">"Nastavení"</string>
   <string name="screen_media_picker_error_failed_selection">"Výběr média se nezdařil, zkuste to prosím znovu."</string>
+  <string name="screen_onboarding_welcome_back">"Vítejte zpět"</string>
   <string name="screen_pinned_timeline_empty_state_description">"Přidržte zprávu a vyberte „%1$s“, kterou chcete zahrnout sem."</string>
   <string name="screen_pinned_timeline_empty_state_headline">"Připněte důležité zprávy, aby je bylo možné snadno najít"</string>
   <plurals name="screen_pinned_timeline_screen_title">
@@ -471,11 +500,15 @@ Opravdu chcete pokračovat?"</string>
   <string name="screen_share_open_apple_maps">"Otevřít v Mapách Apple"</string>
   <string name="screen_share_open_google_maps">"Otevřít v Mapách Google"</string>
   <string name="screen_share_open_osm_maps">"Otevřít v OpenStreetMap"</string>
-  <string name="screen_share_this_location_action">"Sdílet tuto polohu"</string>
+  <string name="screen_share_this_location_action">"Sdílejte vybranou polohu"</string>
+  <string name="screen_sharing_location_option_sheet_title">"Možnosti sdílení"</string>
   <string name="screen_space_list_description">"Prostory, které jste vytvořili nebo se k nim připojili."</string>
   <string name="screen_space_list_details">"%1$s • %2$s"</string>
+  <string name="screen_space_list_empty_state_title">"Vytvořte prostory pro uspořádání místností"</string>
   <string name="screen_space_list_parent_space">"%1$s prostor"</string>
   <string name="screen_space_list_title">"Prostory"</string>
+  <string name="screen_static_location_sheet_timestamp_description">"Sdíleno %1$s"</string>
+  <string name="screen_static_location_sheet_title">"Na mapě"</string>
   <string name="screen_timeline_item_menu_send_failure_changed_identity">"Zpráva nebyla odeslána, protože ověřená identita uživatele %1$s se změnila."</string>
   <string name="screen_timeline_item_menu_send_failure_unsigned_device">"Zpráva nebyla odeslána, protože%1$s neověřil(a) všechna zařízení."</string>
   <string name="screen_timeline_item_menu_send_failure_you_unsigned_device">"Zpráva nebyla odeslána, protože jste neověřili jedno nebo více zařízení."</string>

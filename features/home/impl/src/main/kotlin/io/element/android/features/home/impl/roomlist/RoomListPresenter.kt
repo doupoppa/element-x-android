@@ -28,9 +28,14 @@ import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
 import io.element.android.features.home.impl.datasource.RoomListDataSource
+import io.element.android.features.home.impl.filters.RoomListFilter.Rooms
 import io.element.android.features.home.impl.filters.RoomListFiltersState
+import io.element.android.features.home.impl.filters.into
 import io.element.android.features.home.impl.search.RoomListSearchEvent
 import io.element.android.features.home.impl.search.RoomListSearchState
+import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
+import io.element.android.features.home.impl.spacefilters.into
+import io.element.android.features.home.impl.spacefilters.selectedFilter
 import io.element.android.features.invite.api.SeenInvitesStore
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvents.AcceptInvite
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvents.DeclineInvite
@@ -44,6 +49,7 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.api.roomlist.RoomList
+import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
 import io.element.android.libraries.matrix.ui.safety.rememberHideInvitesAvatar
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -57,8 +63,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -67,9 +71,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-
-private const val EXTENDED_RANGE_SIZE = 40
-private const val SUBSCRIBE_TO_VISIBLE_ROOMS_DEBOUNCE_IN_MILLIS = 300L
 
 @Inject
 class RoomListPresenter(
@@ -88,6 +89,7 @@ class RoomListPresenter(
     private val seenInvitesStore: SeenInvitesStore,
     private val announcementService: AnnouncementService,
     private val coldStartWatcher: AnalyticsColdStartWatcher,
+    private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -97,6 +99,7 @@ class RoomListPresenter(
         val leaveRoomState = leaveRoomPresenter.present()
         val filtersState = filtersPresenter.present()
         val searchState = searchPresenter.present()
+        val spaceFiltersState = spaceFiltersPresenter.present()
         val acceptDeclineInviteState = acceptDeclineInvitePresenter.present()
 
         LaunchedEffect(Unit) {
@@ -119,7 +122,7 @@ class RoomListPresenter(
         fun handleEvent(event: RoomListEvent) {
             when (event) {
                 is RoomListEvent.UpdateVisibleRange -> coroutineScope.launch {
-                    updateVisibleRange(event.range)
+                    roomListDataSource.updateVisibleRange(event.range)
                 }
                 RoomListEvent.DismissRequestVerificationPrompt -> securityBannerDismissed = true
                 RoomListEvent.DismissBanner -> securityBannerDismissed = true
@@ -155,6 +158,13 @@ class RoomListPresenter(
             }
         }
 
+        LaunchedEffect(filtersState.filterSelectionStates, spaceFiltersState.selectedFilter()) {
+            val selectedFilters = filtersState.selectedFilters().map { filter -> filter.into() }
+            val selectedSpaceFilter = spaceFiltersState.selectedFilter().into()
+            val allFilters = RoomListFilter.All(selectedFilters + listOfNotNull(selectedSpaceFilter))
+            roomListDataSource.updateFilter(allFilters)
+        }
+
         val contentState = roomListContentState(
             securityBannerDismissed,
             showNewNotificationSoundBanner,
@@ -168,6 +178,7 @@ class RoomListPresenter(
             leaveRoomState = leaveRoomState,
             filtersState = filtersState,
             searchState = searchState,
+            spaceFiltersState = spaceFiltersState,
             contentState = contentState,
             acceptDeclineInviteState = acceptDeclineInviteState,
             hideInvitesAvatars = hideInvitesAvatar,
@@ -217,7 +228,7 @@ class RoomListPresenter(
         showNewNotificationSoundBanner: Boolean,
     ): RoomListContentState {
         val roomSummaries by produceState(initialValue = AsyncData.Loading()) {
-            roomListDataSource.allRooms.collect { value = AsyncData.Success(it) }
+            roomListDataSource.roomSummariesFlow.collect { value = AsyncData.Success(it) }
         }
         val loadingState by roomListDataSource.loadingState.collectAsState()
         val showEmpty by remember {
@@ -320,25 +331,6 @@ class RoomListPresenter(
     private fun CoroutineScope.clearCacheOfRoom(roomId: RoomId) = launch {
         client.getRoom(roomId)?.use { room ->
             room.clearEventCacheStorage()
-        }
-    }
-
-    private var currentUpdateVisibleRangeJob: Job? = null
-    private fun CoroutineScope.updateVisibleRange(range: IntRange) {
-        currentUpdateVisibleRangeJob?.cancel()
-        currentUpdateVisibleRangeJob = launch {
-            // Debounce the subscription to avoid subscribing to too many rooms
-            delay(SUBSCRIBE_TO_VISIBLE_ROOMS_DEBOUNCE_IN_MILLIS)
-
-            if (range.isEmpty()) return@launch
-            val currentRoomList = roomListDataSource.allRooms.first()
-            // Use extended range to 'prefetch' the next rooms info
-            val midExtendedRangeSize = EXTENDED_RANGE_SIZE / 2
-            val extendedRange = range.first until range.last + midExtendedRangeSize
-            val roomIds = extendedRange.mapNotNull { index ->
-                currentRoomList.getOrNull(index)?.roomId
-            }
-            roomListDataSource.subscribeToVisibleRooms(roomIds)
         }
     }
 }

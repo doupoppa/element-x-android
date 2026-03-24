@@ -30,6 +30,7 @@ import io.element.android.libraries.androidutils.filesize.FileSizeFormatter
 import io.element.android.libraries.androidutils.text.safeLinkify
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.matrix.api.core.EventId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.permalink.PermalinkParser
 import io.element.android.libraries.matrix.api.timeline.item.event.AudioMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.EmoteMessageType
@@ -39,16 +40,23 @@ import io.element.android.libraries.matrix.api.timeline.item.event.LocationMessa
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
 import io.element.android.libraries.matrix.api.timeline.item.event.NoticeMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.OtherMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.StickerMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.TextMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.VideoMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.VoiceMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.getDisambiguatedDisplayName
 import io.element.android.libraries.matrix.ui.messages.toHtmlDocument
 import io.element.android.libraries.mediaviewer.api.util.FileExtensionExtractor
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.jsoup.nodes.Document
 import kotlin.time.Duration
+
+private const val MIN_IMAGE_SIZE = 1L
+private const val MAX_IMAGE_SIZE = 10_000L
+private const val MIN_ASPECT_RATIO = 0.001f
+private const val MAX_ASPECT_RATIO = 10f
 
 @Inject
 class TimelineItemContentMessageFactory(
@@ -60,11 +68,13 @@ class TimelineItemContentMessageFactory(
 ) {
     fun create(
         content: MessageContent,
-        senderDisambiguatedDisplayName: String,
+        senderId: UserId,
+        senderProfile: ProfileDetails,
         eventId: EventId?,
     ): TimelineItemEventContent {
         return when (val messageType = content.type) {
             is EmoteMessageType -> {
+                val senderDisambiguatedDisplayName = senderProfile.getDisambiguatedDisplayName(senderId)
                 val emoteBody = "* $senderDisambiguatedDisplayName ${messageType.body.trimEnd()}"
                 val dom = messageType.formatted?.toHtmlDocument(
                     permalinkParser = permalinkParser,
@@ -83,7 +93,10 @@ class TimelineItemContentMessageFactory(
                 val dom = messageType.formattedCaption?.toHtmlDocument(permalinkParser = permalinkParser)
                 val formattedCaption = dom?.let(::parseHtml)
                     ?: messageType.caption?.withLinks()
-                val aspectRatio = aspectRatioOf(messageType.info?.width, messageType.info?.height)
+                // Coerce the image sizes and prevent invalid aspect ratios, which can cause crashes
+                val width = messageType.info?.width?.coerceIn(MIN_IMAGE_SIZE, MAX_IMAGE_SIZE)
+                val height = messageType.info?.height?.coerceIn(MIN_IMAGE_SIZE, MAX_IMAGE_SIZE)
+                val aspectRatio = aspectRatioOf(width, height)?.coerceIn(MIN_ASPECT_RATIO, MAX_ASPECT_RATIO)
                 TimelineItemImageContent(
                     filename = messageType.filename,
                     fileSize = messageType.info?.size ?: 0,
@@ -94,10 +107,10 @@ class TimelineItemContentMessageFactory(
                     thumbnailSource = messageType.info?.thumbnailSource,
                     mimeType = messageType.info?.mimetype ?: MimeTypes.OctetStream,
                     blurhash = messageType.info?.blurhash,
-                    width = messageType.info?.width?.toInt(),
-                    height = messageType.info?.height?.toInt(),
-                    thumbnailWidth = messageType.info?.thumbnailInfo?.width?.toInt(),
-                    thumbnailHeight = messageType.info?.thumbnailInfo?.height?.toInt(),
+                    width = width?.toInt(),
+                    height = height?.toInt(),
+                    thumbnailWidth = messageType.info?.thumbnailInfo?.width?.coerceIn(MIN_IMAGE_SIZE, MAX_IMAGE_SIZE)?.toInt(),
+                    thumbnailHeight = messageType.info?.thumbnailInfo?.height?.coerceIn(MIN_IMAGE_SIZE, MAX_IMAGE_SIZE)?.toInt(),
                     aspectRatio = aspectRatio,
                     formattedFileSize = fileSizeFormatter.format(messageType.info?.size ?: 0),
                     fileExtension = fileExtensionExtractor.extractFromName(messageType.filename)
@@ -127,8 +140,8 @@ class TimelineItemContentMessageFactory(
             }
             is LocationMessageType -> {
                 val location = Location.fromGeoUri(messageType.geoUri)
+                val body = messageType.body.trimEnd()
                 if (location == null) {
-                    val body = messageType.body.trimEnd()
                     TimelineItemTextContent(
                         body = body,
                         htmlDocument = null,
@@ -137,9 +150,13 @@ class TimelineItemContentMessageFactory(
                     )
                 } else {
                     TimelineItemLocationContent(
-                        body = messageType.body.trimEnd(),
+                        body = body,
                         location = location,
-                        description = messageType.description
+                        description = messageType.description,
+                        senderId = senderId,
+                        senderProfile = senderProfile,
+                        assetType = messageType.assetType,
+                        mode = TimelineItemLocationContent.Mode.Static
                     )
                 }
             }

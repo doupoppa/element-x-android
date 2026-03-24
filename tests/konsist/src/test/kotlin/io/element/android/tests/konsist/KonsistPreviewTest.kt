@@ -61,7 +61,8 @@ class KonsistPreviewTest {
             .functions()
             .withAllAnnotationsOf(PreviewsDayNight::class)
             .assertTrue {
-                it.text.contains("ElementPreview")
+                it.text.contains("ElementPreview") ||
+                    it.text.contains("ElementTimelineItemPreview")
             }
     }
 
@@ -89,6 +90,7 @@ class KonsistPreviewTest {
         "GradientFloatingActionButtonCircleShapePreview",
         "HeaderFooterPageScrollablePreview",
         "HomeTopBarMultiAccountPreview",
+        "HomeTopBarSpaceFiltersSelectedPreview",
         "HomeTopBarSpacesPreview",
         "HomeTopBarWithIndicatorPreview",
         "IconsOtherPreview",
@@ -96,6 +98,7 @@ class KonsistPreviewTest {
         "MatrixBadgeAtomInfoPreview",
         "MatrixBadgeAtomNegativePreview",
         "MatrixBadgeAtomNeutralPreview",
+        "MatrixBadgeAtomNeutralWrappingPreview",
         "MatrixBadgeAtomPositivePreview",
         "MentionSpanThemeInTimelinePreview",
         "MessageComposerViewVoicePreview",

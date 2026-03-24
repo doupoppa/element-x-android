@@ -74,14 +74,21 @@ enum class FeatureFlags(
         key = "feature.createSpaces",
         title = "Create spaces",
         description = "Allow creating spaces.",
-        defaultValue = { false },
+        defaultValue = { true },
         isFinished = false,
     ),
     SpaceSettings(
         key = "feature.spaceSettings",
         title = "Space settings",
         description = "Allow managing space settings such as details, permissions and privacy.",
-        defaultValue = { false },
+        defaultValue = { true },
+        isFinished = false,
+    ),
+    RoomListSpaceFilters(
+        key = "feature.roomListSpaceFilters",
+        title = "Room list space filters",
+        description = "Allow filtering the room list by space.",
+        defaultValue = { true },
         isFinished = false,
     ),
     PrintLogsToLogcat(
@@ -138,6 +145,21 @@ enum class FeatureFlags(
         title = "Sign in with Element Classic",
         description = "Allow the application to sign in to the current Element Classic account.",
         defaultValue = { false },
+        isFinished = false,
+    ),
+    LiveLocationSharing(
+        key = "feature.liveLocationSharing",
+        title = "Live location sharing",
+        description = "Allow sharing live location in rooms.",
+        defaultValue = { false },
+        isFinished = false,
+    ),
+    ValidateNetworkWhenSchedulingNotificationFetching(
+        key = "feature.validate_network_when_scheduling_notification_fetching",
+        title = "validate internet connectivity when scheduling notification fetching",
+        description = "Only fetch events for push notifications when the device has internet connectivity. " +
+            "Enabling this can be problematic in air-gapped environments.",
+        defaultValue = { true },
         isFinished = false,
     ),
 }

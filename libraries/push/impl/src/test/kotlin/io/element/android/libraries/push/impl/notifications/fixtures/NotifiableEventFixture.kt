@@ -13,6 +13,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.ThreadId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.notification.CallIntent
 import io.element.android.libraries.matrix.api.notification.RtcNotificationType
 import io.element.android.libraries.matrix.api.timeline.item.event.EventType
 import io.element.android.libraries.matrix.test.AN_AVATAR_URL
@@ -24,10 +25,12 @@ import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.A_TIMESTAMP
 import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME_2
+import io.element.android.libraries.push.impl.notifications.model.FallbackNotifiableEvent
 import io.element.android.libraries.push.impl.notifications.model.InviteNotifiableEvent
 import io.element.android.libraries.push.impl.notifications.model.NotifiableMessageEvent
 import io.element.android.libraries.push.impl.notifications.model.NotifiableRingingCallEvent
 import io.element.android.libraries.push.impl.notifications.model.SimpleNotifiableEvent
+import io.element.android.services.toolbox.test.systemclock.A_FAKE_TIMESTAMP
 
 fun aSimpleNotifiableEvent(
     sessionId: SessionId = A_SESSION_ID,
@@ -123,6 +126,7 @@ fun aNotifiableCallEvent(
     rtcNotificationType: RtcNotificationType = RtcNotificationType.NOTIFY,
     timestamp: Long = 0L,
     expirationTimestamp: Long = 0L,
+    callIntent: CallIntent = CallIntent.VIDEO,
 ) = NotifiableRingingCallEvent(
     sessionId = sessionId,
     eventId = eventId,
@@ -140,4 +144,20 @@ fun aNotifiableCallEvent(
     roomAvatarUrl = roomAvatarUrl,
     senderAvatarUrl = senderAvatarUrl,
     rtcNotificationType = rtcNotificationType,
+    callIntent = callIntent,
+)
+
+fun aFallbackNotifiableEvent(
+    sessionId: SessionId = A_SESSION_ID,
+) = FallbackNotifiableEvent(
+    sessionId = sessionId,
+    roomId = A_ROOM_ID,
+    eventId = AN_EVENT_ID,
+    editedEventId = null,
+    description = "A fallback notification",
+    canBeReplaced = false,
+    isRedacted = false,
+    isUpdated = false,
+    timestamp = A_FAKE_TIMESTAMP,
+    cause = "Unable to decrypt event",
 )

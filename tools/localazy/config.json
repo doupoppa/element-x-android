@@ -206,6 +206,7 @@
     {
       "name" : ":features:roomdetails:impl",
       "includeRegex" : [
+        "crypto\\.history_sharing\\.room_info_.*",
         "screen_room_details_.*",
         "screen\\.room_details\\..*",
         "screen_room_member_list_.*",
@@ -287,8 +288,7 @@
       "includeRegex" : [
         "screen_welcome_.*",
         "screen_notification_optin_.*",
-        "screen_identity_.*",
-        "screen_session_verification_enter_recovery_key"
+        "screen_identity_.*"
       ]
     },
     {
@@ -408,6 +408,13 @@
         "screen\\.edit_room_address\\..*",
         "screen\\.security_and_privacy\\..*",
         "screen\\.manage_authorized_spaces\\..*"
+      ]
+    },
+    {
+      "name" : ":features:location:impl",
+      "includeRegex" : [
+        "screen\\.share_location\\..*",
+        "screen\\.view_location\\..*"
       ]
     }
   ]

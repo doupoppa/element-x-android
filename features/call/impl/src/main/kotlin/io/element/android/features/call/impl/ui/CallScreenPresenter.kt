@@ -100,7 +100,7 @@ class CallScreenPresenter(
                 )
             }
             onDispose {
-                appCoroutineScope.launch { activeCallManager.hungUpCall(callType) }
+                appCoroutineScope.launch { activeCallManager.hangUpCall(callType) }
             }
         }
 
@@ -226,6 +226,7 @@ class CallScreenPresenter(
                         sessionId = inputs.sessionId,
                         roomId = inputs.roomId,
                         clientId = UUID.randomUUID().toString(),
+                        isAudioCall = inputs.isAudioCall,
                         languageTag = languageTag,
                         theme = theme,
                     ).getOrThrow()

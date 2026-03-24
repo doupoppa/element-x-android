@@ -30,6 +30,7 @@ import io.element.android.libraries.matrix.api.room.SendQueueUpdate
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.knock.KnockRequest
+import io.element.android.libraries.matrix.api.room.location.LiveLocationShare
 import io.element.android.libraries.matrix.api.room.powerlevels.RoomPowerLevelsValues
 import io.element.android.libraries.matrix.api.room.powerlevels.UserRoleChange
 import io.element.android.libraries.matrix.api.room.roomNotificationSettings
@@ -42,6 +43,7 @@ import io.element.android.libraries.matrix.impl.mapper.map
 import io.element.android.libraries.matrix.impl.room.history.map
 import io.element.android.libraries.matrix.impl.room.join.map
 import io.element.android.libraries.matrix.impl.room.knock.RustKnockRequest
+import io.element.android.libraries.matrix.impl.room.location.map
 import io.element.android.libraries.matrix.impl.room.member.RoomMemberListFetcher
 import io.element.android.libraries.matrix.impl.roomdirectory.map
 import io.element.android.libraries.matrix.impl.timeline.RustTimeline
@@ -66,6 +68,7 @@ import kotlinx.coroutines.withContext
 import org.matrix.rustcomponents.sdk.DateDividerMode
 import org.matrix.rustcomponents.sdk.IdentityStatusChangeListener
 import org.matrix.rustcomponents.sdk.KnockRequestsListener
+import org.matrix.rustcomponents.sdk.LiveLocationShareListener
 import org.matrix.rustcomponents.sdk.RoomMessageEventMessageType
 import org.matrix.rustcomponents.sdk.RoomSendQueueUpdate
 import org.matrix.rustcomponents.sdk.SendQueueListener
@@ -80,6 +83,7 @@ import org.matrix.rustcomponents.sdk.getElementCallRequiredPermissions
 import org.matrix.rustcomponents.sdk.use
 import timber.log.Timber
 import uniffi.matrix_sdk.RoomPowerLevelChanges
+import uniffi.matrix_sdk_ui.TimelineEventFocusThreadMode
 import uniffi.matrix_sdk_ui.TimelineReadReceiptTracking
 import kotlin.coroutines.cancellation.CancellationException
 import org.matrix.rustcomponents.sdk.IdentityStatusChange as RustIdentityStateChange
@@ -177,21 +181,18 @@ class JoinedRustRoom(
     ): Result<Timeline> = withContext(roomDispatcher) {
         val hideThreadedEvents = featureFlagService.isFeatureEnabled(FeatureFlags.Threads)
         val focus = when (createTimelineParams) {
-            is CreateTimelineParams.PinnedOnly -> TimelineFocus.PinnedEvents(
-                maxEventsToLoad = 100u,
-                maxConcurrentRequests = 10u,
-            )
+            is CreateTimelineParams.PinnedOnly -> TimelineFocus.PinnedEvents
             is CreateTimelineParams.MediaOnly -> TimelineFocus.Live(hideThreadedEvents = hideThreadedEvents)
             is CreateTimelineParams.Focused -> TimelineFocus.Event(
                 eventId = createTimelineParams.focusedEventId.value,
                 numContextEvents = 50u,
-                hideThreadedEvents = hideThreadedEvents,
+                threadMode = TimelineEventFocusThreadMode.Automatic(hideThreadedEvents),
             )
             is CreateTimelineParams.MediaOnlyFocused -> TimelineFocus.Event(
                 eventId = createTimelineParams.focusedEventId.value,
                 numContextEvents = 50u,
                 // Never hide threaded events in media focused timeline
-                hideThreadedEvents = false,
+                threadMode = TimelineEventFocusThreadMode.Automatic(false),
             )
             is CreateTimelineParams.Threaded -> TimelineFocus.Thread(
                 rootEventId = createTimelineParams.threadRootEventId.value,
@@ -231,8 +232,11 @@ class JoinedRustRoom(
             is CreateTimelineParams.Threaded -> DateDividerMode.DAILY
         }
 
-        // Track read receipts only for focused timeline for performance optimization
-        val trackReadReceipts = createTimelineParams is CreateTimelineParams.Focused
+        // Track read receipts only for focused and threaded timelines for performance optimization
+        val trackReadReceipts = when (createTimelineParams) {
+            is CreateTimelineParams.Focused, is CreateTimelineParams.Threaded -> true
+            is CreateTimelineParams.MediaOnly, is CreateTimelineParams.MediaOnlyFocused, CreateTimelineParams.PinnedOnly -> false
+        }
 
         runCatchingExceptions {
             innerRoom.timelineWithConfiguration(
@@ -320,7 +324,7 @@ class JoinedRustRoom(
 
     override suspend fun reportContent(eventId: EventId, reason: String, blockUserId: UserId?): Result<Unit> = withContext(roomDispatcher) {
         runCatchingExceptions {
-            innerRoom.reportContent(eventId = eventId.value, score = null, reason = reason)
+            innerRoom.reportContent(eventId = eventId.value, reason = reason)
             if (blockUserId != null) {
                 innerRoom.ignoreUser(blockUserId.value)
             }
@@ -496,6 +500,34 @@ class JoinedRustRoom(
                     trySend(update.map())
                 }
             })
+        }
+    }
+
+    override fun subscribeToLiveLocationShares(): Flow<List<LiveLocationShare>> {
+        return mxCallbackFlow {
+            innerRoom.subscribeToLiveLocationShares(object : LiveLocationShareListener {
+                override fun call(liveLocationShares: List<org.matrix.rustcomponents.sdk.LiveLocationShare>) {
+                    trySend(liveLocationShares.map { it.map() })
+                }
+            })
+        }
+    }
+
+    override suspend fun startLiveLocationShare(durationMillis: Long): Result<Unit> = withContext(roomDispatcher) {
+        runCatchingExceptions {
+            innerRoom.startLiveLocationShare(durationMillis.toULong())
+        }
+    }
+
+    override suspend fun stopLiveLocationShare(): Result<Unit> = withContext(roomDispatcher) {
+        runCatchingExceptions {
+            innerRoom.stopLiveLocationShare()
+        }
+    }
+
+    override suspend fun sendLiveLocation(geoUri: String): Result<Unit> = withContext(roomDispatcher) {
+        runCatchingExceptions {
+            innerRoom.sendLiveLocation(geoUri)
         }
     }
 

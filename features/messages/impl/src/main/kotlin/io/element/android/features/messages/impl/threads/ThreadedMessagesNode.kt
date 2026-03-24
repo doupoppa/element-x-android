@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.bumble.appyx.core.lifecycle.subscribe
 import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
@@ -29,6 +30,7 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.MessagesPresenter
+import io.element.android.features.messages.impl.MessagesState
 import io.element.android.features.messages.impl.MessagesView
 import io.element.android.features.messages.impl.actionlist.ActionListPresenter
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionPostProcessor
@@ -41,14 +43,17 @@ import io.element.android.features.messages.impl.timeline.TimelinePresenter
 import io.element.android.features.messages.impl.timeline.di.LocalTimelineItemPresenterFactories
 import io.element.android.features.messages.impl.timeline.di.TimelineItemPresenterFactories
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.roommembermoderation.api.ModerationAction
+import io.element.android.features.roommembermoderation.api.RoomMemberModerationEvents
+import io.element.android.features.roommembermoderation.api.RoomMemberModerationRenderer
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.androidutils.system.openUrlInExternalApp
 import io.element.android.libraries.architecture.NodeInputs
+import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.inputs
 import io.element.android.libraries.designsystem.utils.OnLifecycleEvent
 import io.element.android.libraries.di.RoomScope
-import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.analytics.toAnalyticsViewRoom
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -67,26 +72,24 @@ import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.appnavstate.api.AppNavigationStateService
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 @ContributesNode(RoomScope::class)
 @AssistedInject
 class ThreadedMessagesNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
-    @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val room: JoinedRoom,
     private val analyticsService: AnalyticsService,
-    messageComposerPresenterFactory: MessageComposerPresenter.Factory,
-    timelinePresenterFactory: TimelinePresenter.Factory,
-    presenterFactory: MessagesPresenter.Factory,
-    actionListPresenterFactory: ActionListPresenter.Factory,
+    private val messageComposerPresenterFactory: MessageComposerPresenter.Factory,
+    private val timelinePresenterFactory: TimelinePresenter.Factory,
+    private val presenterFactory: MessagesPresenter.Factory,
+    private val actionListPresenterFactory: ActionListPresenter.Factory,
     private val timelineItemPresenterFactories: TimelineItemPresenterFactories,
     private val mediaPlayer: MediaPlayer,
     private val permalinkParser: PermalinkParser,
     private val appNavigationStateService: AppNavigationStateService,
+    private val roomMemberModerationRenderer: RoomMemberModerationRenderer,
 ) : Node(buildContext, plugins = plugins), MessagesNavigator {
     data class Inputs(
         val threadRootEventId: ThreadId,
@@ -96,20 +99,29 @@ class ThreadedMessagesNode(
     private val inputs = inputs<Inputs>()
     private val callback: Callback = callback()
 
-    // TODO use a loading state node to preload this instead of using `runBlocking`
-    private val threadedTimeline = runBlocking { room.createTimeline(CreateTimelineParams.Threaded(threadRootEventId = inputs.threadRootEventId)).getOrThrow() }
-    private val timelineController = TimelineController(room, threadedTimeline)
-    private val presenter = presenterFactory.create(
-        navigator = this,
-        composerPresenter = messageComposerPresenterFactory.create(timelineController, this),
-        timelinePresenter = timelinePresenterFactory.create(timelineController = timelineController, this),
-        // TODO add special processor for threaded timeline
-        actionListPresenter = actionListPresenterFactory.create(
-            postProcessor = TimelineItemActionPostProcessor.Default,
-            timelineMode = timelineController.mainTimelineMode(),
-        ),
-        timelineController = timelineController,
-    )
+    private var timelineController: TimelineController? by mutableStateOf(null)
+    private var presenter: Presenter<MessagesState>? by mutableStateOf(null)
+
+    /**
+     * This should be fast to load, but not faster than several UI frames, which will cause ANRs.
+     * We'll load the [presenter] in an async way to prevent this.
+     */
+    private suspend fun createPresenter(): Presenter<MessagesState> {
+        val threadedTimeline = room.createTimeline(CreateTimelineParams.Threaded(threadRootEventId = inputs.threadRootEventId)).getOrThrow()
+        val timelineController = TimelineController(room, threadedTimeline)
+        this.timelineController = timelineController
+        return presenterFactory.create(
+            navigator = this,
+            composerPresenter = messageComposerPresenterFactory.create(timelineController, this),
+            timelinePresenter = timelinePresenterFactory.create(timelineController = timelineController, this),
+            // TODO add special processor for threaded timeline
+            actionListPresenter = actionListPresenterFactory.create(
+                postProcessor = TimelineItemActionPostProcessor.Default,
+                timelineMode = timelineController.mainTimelineMode(),
+            ),
+            timelineController = timelineController,
+        )
+    }
 
     interface Callback : Plugin {
         fun handleEventClick(timelineMode: Timeline.Mode, event: TimelineItem.Event): Boolean
@@ -122,7 +134,7 @@ class ThreadedMessagesNode(
         fun navigateToSendLocation()
         fun navigateToCreatePoll()
         fun navigateToEditPoll(eventId: EventId)
-        fun navigateToRoomCall(roomId: RoomId)
+        fun navigateToRoomCall(roomId: RoomId, isAudioCall: Boolean)
         fun navigateToThread(threadRootId: ThreadId, focusedEventId: EventId?)
     }
 
@@ -130,7 +142,10 @@ class ThreadedMessagesNode(
         super.onBuilt()
         lifecycle.subscribe(
             onCreate = {
-                sessionCoroutineScope.launch { analyticsService.capture(room.toAnalyticsViewRoom()) }
+                analyticsService.capture(room.toAnalyticsViewRoom())
+                lifecycleScope.launch {
+                    presenter = createPresenter()
+                }
             },
             onStart = {
                 appNavigationStateService.onNavigateToThread(id, inputs.threadRootEventId)
@@ -231,56 +246,74 @@ class ThreadedMessagesNode(
         CompositionLocalProvider(
             LocalTimelineItemPresenterFactories provides timelineItemPresenterFactories,
         ) {
-            val state = presenter.present()
-            OnLifecycleEvent { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_PAUSE -> state.composerState.eventSink(MessageComposerEvent.SaveDraft)
-                    else -> Unit
-                }
-            }
-            MessagesView(
-                state = state,
-                onBackClick = this::navigateUp,
-                onRoomDetailsClick = {},
-                onEventContentClick = { isLive, event ->
-                    if (isLive) {
-                        callback.handleEventClick(timelineController.mainTimelineMode(), event)
-                    } else {
-                        val detachedTimelineMode = timelineController.detachedTimelineMode()
-                        if (detachedTimelineMode != null) {
-                            callback.handleEventClick(detachedTimelineMode, event)
-                        } else {
-                            false
-                        }
+            // Only display the actual UI and lifecycle logic if the presenter is loaded
+            presenter?.present()?.let { state ->
+                OnLifecycleEvent { _, event ->
+                    when (event) {
+                        Lifecycle.Event.ON_PAUSE -> state.composerState.eventSink(MessageComposerEvent.SaveDraft)
+                        else -> Unit
                     }
-                },
-                onUserDataClick = callback::navigateToRoomMemberDetails,
-                onLinkClick = { url, customTab ->
-                    onLinkClick(
-                        activity = activity,
-                        darkTheme = isDark,
-                        url = url,
-                        eventSink = state.timelineState.eventSink,
-                        customTab = customTab,
-                    )
-                },
-                onSendLocationClick = callback::navigateToSendLocation,
-                onCreatePollClick = callback::navigateToCreatePoll,
-                onJoinCallClick = { callback.navigateToRoomCall(room.roomId) },
-                onViewAllPinnedMessagesClick = {},
-                modifier = modifier,
-                knockRequestsBannerView = {},
-            )
-
-            var focusedEventId by rememberSaveable {
-                mutableStateOf(inputs.focusedEventId)
-            }
-            LaunchedEffect(Unit) {
-                focusedEventId?.also { eventId ->
-                    state.timelineState.eventSink(TimelineEvent.FocusOnEvent(eventId))
                 }
-                // Reset the focused event id to null to avoid refocusing when restoring node.
-                focusedEventId = null
+
+                MessagesView(
+                    state = state,
+                    onBackClick = this::navigateUp,
+                    onRoomDetailsClick = {},
+                    onEventContentClick = { isLive, event ->
+                        timelineController?.let { controller ->
+                            if (isLive) {
+                                callback.handleEventClick(controller.mainTimelineMode(), event)
+                            } else {
+                                val detachedTimelineMode = controller.detachedTimelineMode()
+                                if (detachedTimelineMode != null) {
+                                    callback.handleEventClick(detachedTimelineMode, event)
+                                } else {
+                                    false
+                                }
+                            }
+                        } == true
+                    },
+                    onUserDataClick = callback::navigateToRoomMemberDetails,
+                    onLinkClick = { url, customTab ->
+                        onLinkClick(
+                            activity = activity,
+                            darkTheme = isDark,
+                            url = url,
+                            eventSink = state.timelineState.eventSink,
+                            customTab = customTab,
+                        )
+                    },
+                    onSendLocationClick = callback::navigateToSendLocation,
+                    onCreatePollClick = callback::navigateToCreatePoll,
+                    onJoinCallClick = { isAudioCall ->
+                        callback.navigateToRoomCall(room.roomId, isAudioCall)
+                    },
+                    onViewAllPinnedMessagesClick = {},
+                    modifier = modifier,
+                    knockRequestsBannerView = {},
+                )
+
+                roomMemberModerationRenderer.Render(
+                    state = state.roomMemberModerationState,
+                    onSelectAction = { action, target ->
+                        when (action) {
+                            is ModerationAction.DisplayProfile -> callback.navigateToRoomMemberDetails(target.userId)
+                            else -> state.roomMemberModerationState.eventSink(RoomMemberModerationEvents.ProcessAction(action, target))
+                        }
+                    },
+                    modifier = Modifier,
+                )
+
+                var focusedEventId by rememberSaveable {
+                    mutableStateOf(inputs.focusedEventId)
+                }
+                LaunchedEffect(Unit) {
+                    focusedEventId?.also { eventId ->
+                        state.timelineState.eventSink(TimelineEvent.FocusOnEvent(eventId))
+                    }
+                    // Reset the focused event id to null to avoid refocusing when restoring node.
+                    focusedEventId = null
+                }
             }
         }
     }
