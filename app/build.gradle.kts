@@ -21,10 +21,10 @@ import extension.allFeaturesImpl
 import extension.allLibrariesImpl
 import extension.allServicesImpl
 import extension.buildConfigFieldStr
-import extension.koverDependencies
+// import extension.koverDependencies  # 注释：koverDependencies 函数不存在
 import extension.locales
 import extension.setupDependencyInjection
-import extension.setupKover
+// import extension.setupKover  # 注释：setupKover 函数不存在
 import extension.testCommonDependencies
 import java.util.Locale
 
@@ -33,7 +33,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     // When using precompiled plugins, we need to apply the firebase plugin like this
     id(libs.plugins.firebaseAppDistribution.get().pluginId)
-    alias(libs.plugins.knit)
+    // alias(libs.plugins.knit)  # 注释：knit 插件不存在于 version catalog
     id("kotlin-parcelize")
     alias(libs.plugins.licensee)
     alias(libs.plugins.kotlin.serialization)
@@ -41,7 +41,7 @@ plugins {
     // alias(libs.plugins.gms.google.services)
 }
 
-setupKover()
+// setupKover()  # 注释：函数不存在
 
 android {
     namespace = "io.element.android.x"
@@ -289,24 +289,24 @@ if (isFastBuild) {
 }
 
 // Knit
-apply {
-    plugin("kotlinx-knit")
-}
+// apply {
+//     plugin("kotlinx-knit")
+// }
 
-knit {
-    files = fileTree(project.rootDir) {
-        include(
-            "**/*.md",
-            "**/*.kt",
-            "*/*.kts",
-        )
-        exclude(
-            "**/build/**",
-            "*/.gradle/**",
-            "**/CHANGES.md",
-        )
-    }
-}
+// knit {  # 注释：knit 插件不存在
+//     files = fileTree(project.rootDir) {
+//         include(
+//             "**/*.md",
+//             "**/*.kt",
+//             "*/*.kts",
+//         )
+//         exclude(
+//             "**/build/**",
+//             "*/.gradle/**",
+//             "**/CHANGES.md",
+//         )
+//     }
+// }
 
 setupDependencyInjection()
 
@@ -355,7 +355,7 @@ dependencies {
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.services.toolbox.test)
 
-    koverDependencies()
+    // koverDependencies()  # 注释：函数不存在
 }
 
 tasks.withType<GenerateBuildConfig>().configureEach {
@@ -373,6 +373,7 @@ licensee {
     allow("BSD-3-Clause")
     allow("EPL-1.0")
     allowUrl("https://opensource.org/licenses/MIT")
+    allowUrl("https://opensource.org/license/bsd-3-clause")
     allowUrl("https://developer.android.com/studio/terms.html")
     allowUrl("https://www.zetetic.net/sqlcipher/license/")
     allowUrl("https://jsoup.org/license")
