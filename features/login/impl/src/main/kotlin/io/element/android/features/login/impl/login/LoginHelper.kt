@@ -23,9 +23,9 @@ import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationR
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
-import io.element.android.libraries.matrix.api.auth.OidcPrompt
-import io.element.android.libraries.oidc.api.OidcAction
-import io.element.android.libraries.oidc.api.OidcActionFlow
+import io.element.android.libraries.matrix.api.auth.OAuthPrompt
+import io.element.android.libraries.oauth.api.OAuthAction
+import io.element.android.libraries.oauth.api.OAuthActionFlow
 import timber.log.Timber
 
 /**
@@ -36,7 +36,7 @@ import timber.log.Timber
  */
 @Inject
 class LoginHelper(
-    private val oidcActionFlow: OidcActionFlow,
+    private val oAuthActionFlow: OAuthActionFlow,
     private val authenticationService: MatrixAuthenticationService,
     private val webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever,
 ) {
@@ -45,9 +45,9 @@ class LoginHelper(
     @Composable
     fun collectLoginMode(): State<AsyncData<LoginMode>> {
         LaunchedEffect(Unit) {
-            oidcActionFlow.collect { oidcAction ->
-                if (oidcAction != null) {
-                    onOidcAction(oidcAction)
+            oAuthActionFlow.collect { oAuthAction ->
+                if (oAuthAction != null) {
+                    onOAuthAction(oAuthAction)
                 }
             }
         }
@@ -61,17 +61,26 @@ class LoginHelper(
     suspend fun submit(
         isAccountCreation: Boolean,
         homeserverUrl: String,
+        resolvedHomeserverUrl: String?,
         loginHint: String?,
     ) {
         Timber.d("LOGIN_DEBUG: submit() called with homeserverUrl=$homeserverUrl")
         suspend {
-            authenticationService.setHomeserver(homeserverUrl).map { matrixHomeServerDetails ->
-                Timber.d("LOGIN_DEBUG: setHomeserver success. supportsOidc=${matrixHomeServerDetails.supportsOidcLogin}, supportsPassword=${matrixHomeServerDetails.supportsPasswordLogin}")
-                if (matrixHomeServerDetails.supportsOidcLogin) {
+authenticationService.setHomeserver(homeserverUrl).recoverCatching {
+                // No .well-known file?
+                // If the homeserver is not reachable, try using resolvedHomeserverUrl.
+                if (resolvedHomeserverUrl != null && resolvedHomeserverUrl != homeserverUrl) {
+                    authenticationService.setHomeserver(resolvedHomeserverUrl).getOrThrow()
+                } else {
+                    throw it
+                }
+            }.map { matrixHomeServerDetails ->
+                Timber.d("LOGIN_DEBUG: setHomeserver success. supportsOAuth=${matrixHomeServerDetails.supportsOAuthLogin}, supportsPassword=${matrixHomeServerDetails.supportsPasswordLogin}")
+                if (matrixHomeServerDetails.supportsOAuthLogin) {
                     // Retrieve the details right now
-                    val oidcPrompt = if (isAccountCreation) OidcPrompt.Create else OidcPrompt.Login
-                    LoginMode.Oidc(
-                        authenticationService.getOidcUrl(prompt = oidcPrompt, loginHint = loginHint).getOrThrow()
+                    val oAuthPrompt = if (isAccountCreation) OAuthPrompt.Create else OAuthPrompt.Login
+                    LoginMode.OAuth(
+                        authenticationService.getOAuthUrl(prompt = oAuthPrompt, loginHint = loginHint).getOrThrow()
                     )
                 } else if (isAccountCreation) {
                     val url = webClientUrlForAuthenticationRetriever.retrieve(homeserverUrl)
@@ -94,16 +103,16 @@ class LoginHelper(
         )
     }
 
-    private suspend fun onOidcAction(oidcAction: OidcAction) {
-        if (oidcAction is OidcAction.GoBack && oidcAction.toUnblock && loginModeState.value !is AsyncData.Loading) {
+    private suspend fun onOAuthAction(oAuthAction: OAuthAction) {
+        if (oAuthAction is OAuthAction.GoBack && oAuthAction.toUnblock && loginModeState.value !is AsyncData.Loading) {
             // Ignore GoBack action if the current state is not Loading. This GoBack action is coming from LoginFlowNode.
             // This can happen if there is an error, for instance attempt to login again on the same account.
             return
         }
         loginModeState.value = AsyncData.Loading()
-        when (oidcAction) {
-            is OidcAction.GoBack -> {
-                authenticationService.cancelOidcLogin()
+        when (oAuthAction) {
+            is OAuthAction.GoBack -> {
+                authenticationService.cancelOAuthLogin()
                     .onSuccess {
                         loginModeState.value = AsyncData.Uninitialized
                     }
@@ -111,13 +120,13 @@ class LoginHelper(
                         loginModeState.value = AsyncData.Failure(failure)
                     }
             }
-            is OidcAction.Success -> {
-                authenticationService.loginWithOidc(oidcAction.url)
+            is OAuthAction.Success -> {
+                authenticationService.loginWithOAuth(oAuthAction.url)
                     .onFailure { failure ->
                         loginModeState.value = AsyncData.Failure(failure)
                     }
             }
         }
-        oidcActionFlow.reset()
+        oAuthActionFlow.reset()
     }
 }

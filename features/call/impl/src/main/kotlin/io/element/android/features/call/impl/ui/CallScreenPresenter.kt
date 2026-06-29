@@ -23,7 +23,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.MobileScreen
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.features.call.api.CallType
+import io.element.android.features.call.api.CallData
 import io.element.android.features.call.impl.data.WidgetMessage
 import io.element.android.features.call.impl.utils.ActiveCallManager
 import io.element.android.features.call.impl.utils.CallWidgetProvider
@@ -52,7 +52,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
 class CallScreenPresenter(
-    @Assisted private val callType: CallType,
+    @Assisted private val callData: CallData,
     @Assisted private val navigator: CallScreenNavigator,
     private val callWidgetProvider: CallWidgetProvider,
     userAgentProvider: UserAgentProvider,
@@ -69,10 +69,9 @@ class CallScreenPresenter(
 ) : Presenter<CallScreenState> {
     @AssistedFactory
     interface Factory {
-        fun create(callType: CallType, navigator: CallScreenNavigator): CallScreenPresenter
+        fun create(callData: CallData, navigator: CallScreenNavigator): CallScreenPresenter
     }
 
-    private val isInWidgetMode = callType is CallType.RoomCall
     private val userAgent = userAgentProvider.provide()
 
     @Composable
@@ -90,9 +89,9 @@ class CallScreenPresenter(
         DisposableEffect(Unit) {
             coroutineScope.launch {
                 // Sets the call as joined
-                activeCallManager.joinedCall(callType)
+                activeCallManager.joinedCall(callData)
                 fetchRoomCallUrl(
-                    inputs = callType,
+                    callData = callData,
                     urlState = urlState,
                     callWidgetDriver = callWidgetDriver,
                     languageTag = languageTag,
@@ -100,19 +99,10 @@ class CallScreenPresenter(
                 )
             }
             onDispose {
-                appCoroutineScope.launch { activeCallManager.hangUpCall(callType) }
+                appCoroutineScope.launch { activeCallManager.hangUpCall(callData) }
             }
         }
-
-        when (callType) {
-            is CallType.ExternalUrl -> {
-                // No analytics yet for external calls
-            }
-            is CallType.RoomCall -> {
-                screenTracker.TrackScreen(screen = MobileScreen.ScreenName.RoomCall)
-            }
-        }
-
+        screenTracker.TrackScreen(screen = MobileScreen.ScreenName.RoomCall)
         HandleMatrixClientSyncState()
 
         callWidgetDriver.value?.let { driver ->
@@ -149,34 +139,31 @@ class CallScreenPresenter(
                     .launchIn(this)
             }
 
-            if (callType is CallType.RoomCall) {
-                // Note: For external calls isWidgetLoaded will always be false
-                LaunchedEffect(Unit) {
-                    // Wait for the call to be joined, if it takes too long, we display an error
-                    delay(10.seconds)
+            LaunchedEffect(Unit) {
+                // Wait for the call to be joined, if it takes too long, we display an error
+                delay(10.seconds)
 
-                    if (!isWidgetLoaded) {
-                        val errorDetail = when {
-                            urlState.value is AsyncData.Failure -> {
-                                "Failed to generate call URL: ${(urlState.value as AsyncData.Failure).error.message}"
-                            }
-                            urlState.value is AsyncData.Loading -> {
-                                "Call URL is still loading after 10 seconds"
-                            }
-                            else -> {
-                                "Element Call failed to load within 10 seconds. This may be due to network issues or authentication problems."
-                            }
+                if (!isWidgetLoaded) {
+                    val errorDetail = when {
+                        urlState.value is AsyncData.Failure -> {
+                            "Failed to generate call URL: ${(urlState.value as AsyncData.Failure).error.message}"
                         }
-                        Timber.w("The call took too long to load. Error: $errorDetail")
-                        webViewError = errorDetail
+                        urlState.value is AsyncData.Loading -> {
+                            "Call URL is still loading after 10 seconds"
+                        }
+                        else -> {
+                            "Element Call failed to load within 10 seconds. This may be due to network issues or authentication problems."
+                        }
                     }
+                    Timber.w("The call took too long to load. Error: $errorDetail")
+                    webViewError = errorDetail
                 }
             }
         }
 
-        fun handleEvent(event: CallScreenEvents) {
+        fun handleEvent(event: CallScreenEvent) {
             when (event) {
-                is CallScreenEvents.Hangup -> {
+                is CallScreenEvent.Hangup -> {
                     val widgetId = callWidgetDriver.value?.id
                     val interceptor = messageInterceptor.value
                     if (widgetId != null && interceptor != null && isWidgetLoaded) {
@@ -196,10 +183,10 @@ class CallScreenPresenter(
                         }
                     }
                 }
-                is CallScreenEvents.SetupMessageChannels -> {
+                is CallScreenEvent.SetupMessageChannels -> {
                     messageInterceptor.value = event.widgetMessageInterceptor
                 }
-                is CallScreenEvents.OnWebViewError -> {
+                is CallScreenEvent.OnWebViewError -> {
                     if (!ignoreWebViewError) {
                         webViewError = event.description.orEmpty()
                     }
@@ -213,37 +200,29 @@ class CallScreenPresenter(
             webViewError = webViewError,
             userAgent = userAgent,
             isCallActive = isWidgetLoaded,
-            isInWidgetMode = isInWidgetMode,
             eventSink = ::handleEvent,
         )
     }
 
     private suspend fun fetchRoomCallUrl(
-        inputs: CallType,
+        callData: CallData,
         urlState: MutableState<AsyncData<String>>,
         callWidgetDriver: MutableState<MatrixWidgetDriver?>,
         languageTag: String?,
         theme: String?,
     ) {
         urlState.runCatchingUpdatingState {
-            when (inputs) {
-                is CallType.ExternalUrl -> {
-                    inputs.url
-                }
-                is CallType.RoomCall -> {
-                    val result = callWidgetProvider.getWidget(
-                        sessionId = inputs.sessionId,
-                        roomId = inputs.roomId,
-                        clientId = UUID.randomUUID().toString(),
-                        isAudioCall = inputs.isAudioCall,
-                        languageTag = languageTag,
-                        theme = theme,
-                    ).getOrThrow()
-                    callWidgetDriver.value = result.driver
-                    Timber.d("Call widget driver initialized for sessionId: ${inputs.sessionId}, roomId: ${inputs.roomId}")
-                    result.url
-                }
-            }
+            val result = callWidgetProvider.getWidget(
+                sessionId = callData.sessionId,
+                roomId = callData.roomId,
+                clientId = UUID.randomUUID().toString(),
+                isAudioCall = callData.isAudioCall,
+                languageTag = languageTag,
+                theme = theme,
+            ).getOrThrow()
+            callWidgetDriver.value = result.driver
+            Timber.d("Call widget driver initialized for sessionId: ${callData.sessionId}, roomId: ${callData.roomId}")
+            result.url
         }
     }
 
@@ -251,12 +230,11 @@ class CallScreenPresenter(
     private fun HandleMatrixClientSyncState() {
         val coroutineScope = rememberCoroutineScope()
         DisposableEffect(Unit) {
-            val roomCallType = callType as? CallType.RoomCall ?: return@DisposableEffect onDispose {}
-            val client = matrixClientsProvider.getOrNull(roomCallType.sessionId) ?: return@DisposableEffect onDispose {
-                Timber.w("No MatrixClient found for sessionId, can't send call notification: ${roomCallType.sessionId}")
+            val client = matrixClientsProvider.getOrNull(callData.sessionId) ?: return@DisposableEffect onDispose {
+                Timber.w("No MatrixClient found for sessionId, can't send call notification: ${callData.sessionId}")
             }
             coroutineScope.launch {
-                Timber.d("Observing sync state in-call for sessionId: ${roomCallType.sessionId}")
+                Timber.d("Observing sync state in-call for sessionId: ${callData.sessionId}")
                 client.syncService.syncState
                     .collect { state ->
                         if (state != SyncState.Running) {
@@ -265,7 +243,7 @@ class CallScreenPresenter(
                     }
             }
             onDispose {
-                Timber.d("Stopped observing sync state in-call for sessionId: ${roomCallType.sessionId}")
+                Timber.d("Stopped observing sync state in-call for sessionId: ${callData.sessionId}")
                 // Make sure we mark the call as ended in the app state
                 appForegroundStateService.updateIsInCallState(false)
             }

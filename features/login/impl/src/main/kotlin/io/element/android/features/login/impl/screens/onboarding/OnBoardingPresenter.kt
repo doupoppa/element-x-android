@@ -33,6 +33,7 @@ import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.utils.MultipleTapToUnlock
 import kotlinx.coroutines.launch
@@ -77,6 +78,7 @@ class OnBoardingPresenter(
                     loginHelper.submit(
                         isAccountCreation = false,
                         homeserverUrl = customHomeserverUrl,
+                        resolvedHomeserverUrl = null,
                         loginHint = null,
                     )
                 }
@@ -125,12 +127,12 @@ class OnBoardingPresenter(
 
         val loginMode by loginHelper.collectLoginMode()
 
-        // Splash screen logic: show splash until OIDC Chrome tab opens for the first time
+        // Splash screen logic: show splash until OAuth Chrome tab opens for the first time
         var hasOidcOpened by rememberSaveable { mutableStateOf(false) }
         LaunchedEffect(loginMode) {
             if (!hasOidcOpened && loginMode is AsyncData.Success) {
                 val mode = (loginMode as AsyncData.Success).data
-                if (mode is LoginMode.Oidc) {
+                if (mode is LoginMode.OAuth) {
                     hasOidcOpened = true
                 }
             }
@@ -149,6 +151,7 @@ class OnBoardingPresenter(
                     loginHelper.submit(
                         isAccountCreation = false,
                         homeserverUrl = customHomeserverUrl,
+                        resolvedHomeserverUrl = null,
                         loginHint = params.loginHint?.takeIf { forcedAccountProvider == null },
                     )
                 }
@@ -165,6 +168,8 @@ class OnBoardingPresenter(
 
         return OnBoardingState(
             isAddingAccount = isAddingAccount,
+            showBackButton = params.showBackButton,
+            showDeveloperSettings = buildMeta.buildType != BuildType.RELEASE,
             productionApplicationName = buildMeta.productionApplicationName,
             defaultAccountProvider = defaultAccountProvider,
             mustChooseAccountProvider = mustChooseAccountProvider,
