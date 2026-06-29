@@ -17,6 +17,7 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.room.isDm
 import io.element.android.libraries.matrix.api.widget.CallWidgetSettingsProvider
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.appnavstate.api.ActiveRoomsHolder
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -28,6 +29,7 @@ class DefaultCallWidgetProvider(
     private val appPreferencesStore: AppPreferencesStore,
     private val callWidgetSettingsProvider: CallWidgetSettingsProvider,
     private val activeRoomsHolder: ActiveRoomsHolder,
+    private val sessionStore: SessionStore,
 ) : CallWidgetProvider {
     override suspend fun getWidget(
         sessionId: SessionId,
@@ -38,6 +40,23 @@ class DefaultCallWidgetProvider(
         theme: String?,
     ): Result<CallWidgetProvider.GetWidgetResult> = runCatchingExceptions {
         val matrixClient = matrixClientsProvider.getOrRestore(sessionId).getOrThrow()
+
+        // Verify session is valid before generating widget URL
+        val sessionIdValue = matrixClient.sessionId
+        if (sessionIdValue.value.isBlank()) {
+            return Result.failure(IllegalStateException("Session is invalid or expired. Cannot generate call widget URL."))
+        }
+
+        // Check if session token is valid
+        val sessionData = sessionStore.getSession(sessionIdValue.value)
+        if (sessionData?.isTokenValid != true) {
+            return Result.failure(
+                IllegalStateException(
+                    "Session token is invalid or expired. Please log in again to make calls."
+                )
+            )
+        }
+
         val room = activeRoomsHolder.getActiveRoomMatching(sessionId, roomId)
             ?: matrixClient.getJoinedRoom(roomId)
             ?: error("Room not found")

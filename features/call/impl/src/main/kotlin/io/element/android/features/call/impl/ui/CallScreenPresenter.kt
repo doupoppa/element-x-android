@@ -156,10 +156,19 @@ class CallScreenPresenter(
                     delay(10.seconds)
 
                     if (!isWidgetLoaded) {
-                        Timber.w("The call took too long to load. Displaying an error before exiting.")
-
-                        // This will display a simple 'Sorry, an error occurred' dialog and force the user to exit the call
-                        webViewError = ""
+                        val errorDetail = when {
+                            urlState.value is AsyncData.Failure -> {
+                                "Failed to generate call URL: ${(urlState.value as AsyncData.Failure).error.message}"
+                            }
+                            urlState.value is AsyncData.Loading -> {
+                                "Call URL is still loading after 10 seconds"
+                            }
+                            else -> {
+                                "Element Call failed to load within 10 seconds. This may be due to network issues or authentication problems."
+                            }
+                        }
+                        Timber.w("The call took too long to load. Error: $errorDetail")
+                        webViewError = errorDetail
                     }
                 }
             }

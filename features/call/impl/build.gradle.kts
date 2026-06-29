@@ -77,6 +77,7 @@ dependencies {
     implementation(projects.libraries.matrixmedia.api)
     implementation(projects.libraries.network)
     implementation(projects.libraries.preferences.api)
+    implementation(projects.libraries.sessionStorage.api)
     implementation(projects.libraries.push.api)
     implementation(projects.libraries.uiStrings)
     implementation(projects.services.analytics.api)
