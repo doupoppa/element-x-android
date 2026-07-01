@@ -129,7 +129,7 @@ class CallScreenPresenter(
 
                         val parsedMessage = parseMessage(it)
                         if (parsedMessage?.direction == WidgetMessage.Direction.FromWidget) {
-                            if (parsedMessage.action == WidgetMessage.Action.Close || parsedMessage.action == WidgetMessage.Action.HangUp) {
+                            if (parsedMessage.action == WidgetMessage.Action.Close) {
                                 close(callWidgetDriver.value, navigator)
                             } else if (parsedMessage.action == WidgetMessage.Action.ContentLoaded) {
                                 isWidgetLoaded = true

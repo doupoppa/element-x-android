@@ -186,41 +186,6 @@ class CallScreenPresenterTest {
     }
 
     @Test
-    fun `present - a received hangup message closes the screen and stops the widget driver`() = runTest(UnconfinedTestDispatcher()) {
-        val navigator = FakeCallScreenNavigator()
-        val widgetDriver = FakeMatrixWidgetDriver()
-        val presenter = createCallScreenPresenter(
-            callType = CallType.RoomCall(A_SESSION_ID, A_ROOM_ID),
-            widgetDriver = widgetDriver,
-            navigator = navigator,
-            dispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true),
-            screenTracker = FakeScreenTracker {},
-        )
-        val messageInterceptor = FakeWidgetMessageInterceptor()
-        moleculeFlow(RecompositionMode.Immediate) {
-            presenter.present()
-        }.test {
-            val initialState = awaitItem()
-
-            // Give it time to load the URL and WidgetDriver
-            advanceTimeBy(1.seconds)
-
-            initialState.eventSink(CallScreenEvents.SetupMessageChannels(messageInterceptor))
-
-            messageInterceptor.givenInterceptedMessage("""{"action":"im.vector.hangup","api":"fromWidget","widgetId":"1","requestId":"1"}""")
-
-            // Let background coroutines run
-            advanceTimeBy(1.seconds)
-            runCurrent()
-
-            assertThat(navigator.closeCalled).isTrue()
-            assertThat(widgetDriver.closeCalledCount).isEqualTo(1)
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `present - a received 'content loaded' action makes the call to be active`() = runTest {
         val navigator = FakeCallScreenNavigator()
         val widgetDriver = FakeMatrixWidgetDriver()
